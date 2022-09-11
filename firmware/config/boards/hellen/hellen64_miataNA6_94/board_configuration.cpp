@@ -118,7 +118,7 @@ void setBoardDefaultConfiguration() {
 
 	// these stm32 pins do not match hellen_meta, is that because hellenNA6 is not using latest MCU version?
 	engineConfiguration->acRelayPin = Gpio::H15; // 1J - AC Relay
-	engineConfiguration->fuelPumpPin = Gpio::G2;	// OUT_IO9
+	engineConfiguration->fuelPumpPin = Gpio::H13;	// OUT_HIGH1, white wire to P3 for controlling ST_SIG instead of going to rewired AFM
 	engineConfiguration->idle.solenoidPin = Gpio::D14;	// OUT_PWM5
 	engineConfiguration->fanPin = Gpio::D12;	// OUT_PWM8
 	engineConfiguration->mainRelayPin = Gpio::I2;	// OUT_LOW3
