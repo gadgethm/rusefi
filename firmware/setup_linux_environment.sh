@@ -17,8 +17,7 @@
 # install dependencies
 #sudo apt-get install -y build-essential gcc make openjdk-8-jdk-headless ant mtools zip xxd
 
-# delete any old tools, create a new folder, andarm-none-eabi-gcc -v
- go there
+# delete any old tools, create a new folder, and go there
 rm -rf ~/.rusefi-tools
 mkdir ~/.rusefi-tools
 cd ~/.rusefi-tools
