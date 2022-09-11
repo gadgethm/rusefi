@@ -86,6 +86,8 @@ static void setupDefaultSensorInputs() {
 
 	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
 	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
+
+	engineConfiguration->oilPressure.hwChannel = Gpio::F4;
 }
 
 void setBoardConfigOverrides() {
