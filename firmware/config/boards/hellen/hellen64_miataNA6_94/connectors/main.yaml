@@ -15,6 +15,13 @@ pins:
     function: ECU power in start & run
     type: 12V
 
+  - pin: 1C
+    id: H13
+    class: outputs
+    ts_name: 1C - ST_SIG
+    function: Fuel Pump Relay
+    type: ls
+
   - pin: 1D
     function: CAN bus high
     type: can
@@ -24,7 +31,7 @@ pins:
     type: can
 
   - pin: 1E
-    id: G9
+    id: G4
     class: outputs
     ts_name: 1E - Check Engine Light
     function: Check Engine Light
@@ -234,13 +241,6 @@ pins:
     class: outputs
     ts_name: 3S - A/C Fan 94-95
     function: A/C Fan
-
-  - pin: 3T
-    id: G2
-    class: outputs
-    ts_name: Fuel Pump Relay
-    function: Fuel Pump Relay
-    type: ls
 
   - pin: 3N
     id: EFI_ADC_0
