@@ -26,12 +26,7 @@
 #include "sensor_chart.h"
 #endif
 
-
-
-#if EFI_ENGINE_SNIFFER
 #include "engine_sniffer.h"
-extern WaveChart waveChart;
-#endif /* EFI_ENGINE_SNIFFER */
 
 // See RpmCalculator::checkIfSpinning()
 #ifndef NO_RPM_EVENTS_TIMEOUT_SECS
@@ -308,7 +303,6 @@ float RpmCalculator::getSecondsSinceEngineStart(efitick_t nowNt) const {
 	return engineStartTimer.getElapsedSeconds(nowNt);
 }
 
-static char rpmBuffer[_MAX_FILLER];
 
 /**
  * This callback has nothing to do with actual engine control, it just sends a Top Dead Center mark to the rusEfi console
@@ -321,11 +315,8 @@ static void onTdcCallback(void *) {
 	}
 #endif /* EFI_UNIT_TEST */
 
-	itoa10(rpmBuffer, Sensor::getOrZero(SensorType::Rpm));
-#if EFI_ENGINE_SNIFFER
-	waveChart.startDataCollection();
-#endif
-	addEngineSnifferEvent(TOP_DEAD_CENTER_MESSAGE, (char* ) rpmBuffer);
+	int rpm = Sensor::getOrZero(SensorType::Rpm);
+	addEngineSnifferTdcEvent(rpm);
 #if EFI_TOOTH_LOGGER
 	LogTriggerTopDeadCenter(getTimeNowNt());
 #endif /* EFI_TOOTH_LOGGER */

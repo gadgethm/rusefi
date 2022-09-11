@@ -236,7 +236,7 @@ void Engine::periodicSlowCallback() {
 
 #if ANALOG_HW_CHECK_MODE
 	efiAssertVoid(OBD_PCM_Processor_Fault, isAdcChannelValid(engineConfiguration->clt.adcChannel), "No CLT setting");
-	efitimesec_t secondsNow = getTimeNowSeconds();
+	efitimesec_t secondsNow = getTimeNowS();
 
 #if ! HW_CHECK_ALWAYS_STIMULATE
 	fail("HW_CHECK_ALWAYS_STIMULATE required to have self-stimulation")
@@ -415,8 +415,8 @@ void Engine::OnTriggerSyncronization(bool wasSynchronized, bool isDecodingError)
 			if (engineConfiguration->verboseTriggerSynchDetails || (triggerCentral.triggerState.someSortOfTriggerError() && !engineConfiguration->silentTriggerError)) {
 				efiPrintf("error: synchronizationPoint @ index %d expected %d/%d got %d/%d",
 						triggerCentral.triggerState.currentCycle.current_index,
-						TRIGGER_WAVEFORM(getExpectedEventCount(0)),
-						TRIGGER_WAVEFORM(getExpectedEventCount(1)),
+						TRIGGER_WAVEFORM(getExpectedEventCount(TriggerWheel::T_PRIMARY)),
+						TRIGGER_WAVEFORM(getExpectedEventCount(TriggerWheel::T_SECONDARY)),
 						triggerCentral.triggerState.currentCycle.eventCount[0],
 						triggerCentral.triggerState.currentCycle.eventCount[1]);
 			}
@@ -454,13 +454,12 @@ void Engine::efiWatchdog() {
 	if (engine->configBurnTimer.hasElapsedSec(5) && engineConfiguration->tempBooleanForVerySpecialLogic) {
 		static efitimems_t mostRecentMs = 0;
 
-		float msNow = currentTimeMillis();
-		if (msNow != 0) {
-			float gapInMs = msNow - mostRecentMs;
+		efitimems_t msNow = getTimeNowMs();
+		if (mostRecentMs != 0) {
+			efitimems_t gapInMs = msNow - mostRecentMs;
 			if (gapInMs > 500) {
-				// float has 24 bits in the mantissa, which should allow up to 8 significant figures
-				// we loose precision here after about 1,000,000 seconds which is 11 days
-				firmwareError(WATCH_DOG_SECONDS, "gap in time: now=%fms gap=%fms", msNow, gapInMs);
+				firmwareError(WATCH_DOG_SECONDS, "gap in time: now=%d mS, was %d mS, gap=%dmS",
+					msNow, mostRecentMs, gapInMs);
 			}
 		}
 		mostRecentMs = msNow;

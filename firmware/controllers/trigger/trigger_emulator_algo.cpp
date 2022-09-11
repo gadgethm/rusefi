@@ -48,7 +48,7 @@ void TriggerEmulatorHelper::handleEmulatorCallback(const MultiChannelStateSequen
 		if (needEvent(stateIndex, multiChannelStateSequence, i)) {
 			pin_state_t currentValue = multiChannelStateSequence.getChannelState(/*phaseIndex*/i, stateIndex);
 
-			handleShaftSignal(i, currentValue, stamp);
+			handleShaftSignal(i, currentValue == TriggerValue::RISE, stamp);
 		}
 	}
 #endif // EFI_SHAFT_POSITION_INPUT
@@ -106,7 +106,7 @@ static void updateTriggerWaveformIfNeeded(PwmConfig *state) {
 	if (atTriggerVersion < engine->triggerCentral.triggerShape.version) {
 		atTriggerVersion = engine->triggerCentral.triggerShape.version;
 		efiPrintf("Stimulator: updating trigger shape: %d/%d %d", atTriggerVersion,
-				engine->getGlobalConfigurationVersion(), currentTimeMillis());
+				engine->getGlobalConfigurationVersion(), getTimeNowMs());
 
 
 		TriggerWaveform *s = &engine->triggerCentral.triggerShape;

@@ -1,6 +1,6 @@
 #include "global.h"
 #include "rusefi_enums.h"
-// was generated automatically by rusEFI tool  from rusefi_enums.h // by enum2string.jar tool on Thu Sep 01 02:16:49 UTC 2022
+// was generated automatically by rusEFI tool  from rusefi_enums.h // by enum2string.jar tool on Sun Sep 11 07:52:24 UTC 2022
 // see also gen_config_and_enums.bat
 
 
@@ -106,6 +106,15 @@ case TransmissionControllerMode::SimpleTransmissionController:
   }
  return NULL;
 }
+const char *getTriggerWheel(TriggerWheel value){
+switch(value) {
+case TriggerWheel::T_PRIMARY:
+  return "T_PRIMARY";
+case TriggerWheel::T_SECONDARY:
+  return "T_SECONDARY";
+  }
+ return NULL;
+}
 const char *getTsCalMode(TsCalMode value){
 switch(value) {
 case TsCalMode::EtbKd:
@@ -136,17 +145,6 @@ case TsCalMode::Tps2SecondaryMax:
   return "Tps2SecondaryMax";
 case TsCalMode::Tps2SecondaryMin:
   return "Tps2SecondaryMin";
-  }
- return NULL;
-}
-const char *getAdc_channel_mode_e(adc_channel_mode_e value){
-switch(value) {
-case ADC_FAST:
-  return "ADC_FAST";
-case ADC_OFF:
-  return "ADC_OFF";
-case ADC_SLOW:
-  return "ADC_SLOW";
   }
  return NULL;
 }
@@ -662,39 +660,6 @@ case TL_MANUAL:
   return "TL_MANUAL";
 case TL_SEMI_AUTO:
   return "TL_SEMI_AUTO";
-  }
- return NULL;
-}
-const char *getTrigger_event_e(trigger_event_e value){
-switch(value) {
-case SHAFT_PRIMARY_FALLING:
-  return "SHAFT_PRIMARY_FALLING";
-case SHAFT_PRIMARY_RISING:
-  return "SHAFT_PRIMARY_RISING";
-case SHAFT_SECONDARY_FALLING:
-  return "SHAFT_SECONDARY_FALLING";
-case SHAFT_SECONDARY_RISING:
-  return "SHAFT_SECONDARY_RISING";
-  }
- return NULL;
-}
-const char *getTrigger_value_e(trigger_value_e value){
-switch(value) {
-case TV_FALL:
-  return "TV_FALL";
-case TV_RISE:
-  return "TV_RISE";
-  }
- return NULL;
-}
-const char *getTrigger_wheel_e(trigger_wheel_e value){
-switch(value) {
-case T_NONE:
-  return "T_NONE";
-case T_PRIMARY:
-  return "T_PRIMARY";
-case T_SECONDARY:
-  return "T_SECONDARY";
   }
  return NULL;
 }

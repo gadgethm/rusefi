@@ -1,6 +1,6 @@
 package com.rusefi.config.generated;
 
-// this file was generated automatically by rusEFI tool ConfigDefinition.jar based on gen_config.sh integration/rusefi_config.txt Sat Sep 10 05:10:15 UTC 2022
+// this file was generated automatically by rusEFI tool ConfigDefinition.jar based on gen_config.sh integration/rusefi_config.txt Sun Sep 11 07:53:34 UTC 2022
 
 // by class com.rusefi.output.FileJavaFieldsConsumer
 import com.rusefi.config.*;
@@ -35,9 +35,6 @@ public class Fields {
 	public static final int adc_channel_e_EFI_ADC_ERROR = 50;
 	public static final int adc_channel_e_EFI_ADC_LAST_CHANNEL = 17;
 	public static final int adc_channel_e_EFI_ADC_NONE = 0;
-	public static final int adc_channel_mode_e_ADC_FAST = 2;
-	public static final int adc_channel_mode_e_ADC_OFF = 0;
-	public static final int adc_channel_mode_e_ADC_SLOW = 1;
 	public static final int ADC_CHANNEL_NONE = 0;
 	public static final int adcVcc_offset = 492;
 	public static final int afr_hwChannel_offset = 508;
@@ -1770,7 +1767,6 @@ public class Fields {
 	public static final String PROTOCOL_COIL1_SHORT_NAME = "c1";
 	public static final String PROTOCOL_CRANK1 = "t1";
 	public static final String PROTOCOL_CRANK2 = "t2";
-	public static final String PROTOCOL_CRANK3 = "t3";
 	public static final String PROTOCOL_ENGINE_SNIFFER = "wave_chart";
 	public static final String PROTOCOL_ES_DOWN = "d";
 	public static final String PROTOCOL_ES_UP = "u";
@@ -2157,10 +2153,6 @@ public class Fields {
 	public static final int trigger_config_s_size = 12;
 	public static final int trigger_customSkippedToothCount_offset = 476;
 	public static final int trigger_customTotalToothCount_offset = 472;
-	public static final int trigger_event_e_SHAFT_PRIMARY_FALLING = 0;
-	public static final int trigger_event_e_SHAFT_PRIMARY_RISING = 1;
-	public static final int trigger_event_e_SHAFT_SECONDARY_FALLING = 2;
-	public static final int trigger_event_e_SHAFT_SECONDARY_RISING = 3;
 	public static final String TRIGGER_GAP_FROM = "gapFrom";
 	public static final String TRIGGER_GAP_TO = "gapTo";
 	public static final String TRIGGER_GAPS_COUNT = "gapsCount";
@@ -2249,11 +2241,6 @@ public class Fields {
 	public static final int trigger_type_e_UNUSED_21 = 21;
 	public static final int trigger_type_e_UNUSED_34 = 34;
 	public static final int trigger_type_offset = 468;
-	public static final int trigger_value_e_TV_FALL = 0;
-	public static final int trigger_value_e_TV_RISE = 1;
-	public static final int trigger_wheel_e_T_NONE = 15;
-	public static final int trigger_wheel_e_T_PRIMARY = 0;
-	public static final int trigger_wheel_e_T_SECONDARY = 1;
 	public static final int triggerCompCenterVolt_offset = 2536;
 	public static final int triggerCompHystMax_offset = 2538;
 	public static final int triggerCompHystMin_offset = 2537;
@@ -2308,6 +2295,8 @@ public class Fields {
 	public static final int triggerSimulatorPins1_offset = 748;
 	public static final int triggerSimulatorPins2_offset = 750;
 	public static final int triggerSimulatorPins3_offset = 752;
+	public static final int TriggerWheel_T_PRIMARY = 0;
+	public static final int TriggerWheel_T_SECONDARY = 1;
 	public static final int TRIM_SIZE = 4;
 	public static final int TS_BLOCK_READ_TIMEOUT = 3000;
 	public static final char TS_BURN_COMMAND = 'B';
@@ -2378,7 +2367,7 @@ public class Fields {
 	public static final int TS_RESPONSE_UNDERRUN = 0x80;
 	public static final int TS_RESPONSE_UNRECOGNIZED_COMMAND = 0x83;
 	public static final char TS_SET_LOGGER_SWITCH = 'l';
-	public static final String TS_SIGNATURE = "rusEFI 2022.09.10.all.3533734630";
+	public static final String TS_SIGNATURE = "rusEFI 2022.09.11.all.3869529469";
 	public static final char TS_SINGLE_WRITE_COMMAND = 'W';
 	public static final char TS_TEST_COMMAND = 't';
 	public static final int TS_TOTAL_OUTPUT_SIZE = 1248;
