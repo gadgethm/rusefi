@@ -12,7 +12,7 @@ const char * getBoardSpecificPinName(brain_pin_e brainPin) {
 		case Gpio::A7: return "4G - PPS2 OR TEMPERATURE SENSOR";
 		case Gpio::B0: return "4H - TPS2";
 		case Gpio::B1: return "3E - CRANK";
-		case Gpio::C1: return "2M - Pressure Sensor";
+		case Gpio::C1: return "3J - Oil Pressure";
 		case Gpio::C4: return "1V - Clutch Switch";
 		case Gpio::C5: return "1Q AC Switch";
 		case Gpio::C6: return "ETB EN";
@@ -24,7 +24,7 @@ const char * getBoardSpecificPinName(brain_pin_e brainPin) {
 		case Gpio::D14: return "3W - IDLE";
 		case Gpio::D9: return "3S - A/C Fan 94-95";
 		case Gpio::E5: return "1H - Ignition 2 & 3";
-		case Gpio::F11: return "1M - VSS";
+		case Gpio::F11: return "3R - VSS";
 		case Gpio::F12: return "2J - Boost Control";
 		case Gpio::F14: return "2I - VVT";
 		case Gpio::F3: return "2L - Flex Fuel";

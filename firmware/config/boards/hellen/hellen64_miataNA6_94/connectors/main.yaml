@@ -143,12 +143,12 @@ pins:
     function: Flex Fuel Input
   
   - pin: 2M
-    id: [C1, EFI_ADC_11]
-    class: [switch_inputs, analog_inputs] 
-    ts_name: 2M - Pressure Sensor
+    #id: [C1, EFI_ADC_11] #Commented out since 3J is using this input
+    #class: [switch_inputs, analog_inputs] 
+    #ts_name: 2M - Pressure Sensor
     function: pressure input 
     
-  - pin: 2N 
+  - pin: 2N
     id: [A1, EFI_ADC_1]
     class: [switch_inputs, analog_inputs]
     ts_name: 2N - Temperature Sensor
@@ -204,7 +204,7 @@ pins:
     function: tachometer
     
   - pin: 3J
-    id: F4
+    id: [C1, EFI_ADC_11]
     class: [switch_inputs, analog_inputs]
     ts_name: 3J - Oil Pressure
     function: Oil pressure sensor
@@ -298,7 +298,7 @@ pins:
   - pin: int_map
     id: EFI_ADC_2
     class: analog_inputs
-    ts_name: intMAP (A15)
+    ts_name: Internal MAP (A15)
     
   - pin: 4A
     function: ETB + 

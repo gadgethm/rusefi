@@ -76,7 +76,7 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->tps2_1AdcChannel = EFI_ADC_NONE;
 
 	engineConfiguration->mafAdcChannel = EFI_ADC_10;
-	engineConfiguration->map.sensor.hwChannel = EFI_ADC_11;
+	engineConfiguration->map.sensor.hwChannel = EFI_ADC_2;
 
 	engineConfiguration->afr.hwChannel = EFI_ADC_1;
 
@@ -87,7 +87,7 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
 	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
 
-	engineConfiguration->oilPressure.hwChannel = Gpio::F4;
+	engineConfiguration->oilPressure.hwChannel = EFI_ADC_11;
 }
 
 void setBoardConfigOverrides() {
