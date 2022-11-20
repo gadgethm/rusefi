@@ -12,6 +12,7 @@
 
 #include "state_sequence.h"
 #include "engine_configuration_generated_structures.h"
+#include <rusefi/isnan.h>
 
 #define FOUR_STROKE_ENGINE_CYCLE 720
 
@@ -32,7 +33,7 @@
 #define wrapAngle2(angle, msg, code, engineCycle)			   	    	    \
 	{																		\
    	    if (cisnan(angle)) {                                                \
-		   firmwareError(CUSTOM_ERR_ANGLE, "aNaN%s", msg);                  \
+		   firmwareError(CUSTOM_ERR_ANGLE, "a NaN %s", msg);                \
 		   angle = 0;                                                       \
 	    }                                                                   \
 		assertAngleRange(angle, msg, code);	   					            \
@@ -46,23 +47,11 @@
 			angle -= engineCycleDurationLocalCopy;   						\
 	}
 
-/**
- * This structure defines an angle position in relation to specific tooth within trigger shape
- */
-class event_trigger_position_s {
-public:
-	size_t triggerEventIndex = 0;
-
-	angle_t angleOffsetFromTriggerEvent = 0;
-
-	void setAngle(angle_t angle);
-};
-
-class Engine;
 class TriggerDecoderBase;
 class TriggerFormDetails;
 class TriggerConfiguration;
 
+#include "sync_edge.h"
 
 /**
  * @brief Trigger shape has all the fields needed to describe and decode trigger signal.
@@ -104,16 +93,6 @@ public:
 	bool shapeDefinitionError = false;
 
 	/**
-	 * https://github.com/rusefi/rusefi/issues/898
-	 * User can choose for example Miata trigger which is not compatible with useOnlyRisingEdgeForTrigger option
-	 * Such contradictory configuration causes a very hard to identify issue and for the sake of usability it's better to
-	 * just crash with a very visible fatal error
-	 *
-	 * One day a nicer implementation could be simply ignoring 'useOnlyRisingEdgeForTrigger' in case of 'bothFrontsRequired'
-	 */
-	bool bothFrontsRequired = false;
-
-	/**
 	 * this variable is incremented after each trigger shape redefinition
 	 */
 	int version = 0;
@@ -150,19 +129,14 @@ public:
 	 * See also gapBothDirections
 	 */
 	bool useOnlyPrimaryForSync;
-	/**
-	 * Should we use falls or rises for gap ratio detection?
-	 * See also useOnlyRisingEdgeForTrigger
-	 */
-	bool useRiseEdge;
-	/**
-	 * This is about selecting signal edges within particular trigger channels.
-	 * Should we measure gaps with both fall and rise signal edges?
-	 * See also useOnlyPrimaryForSync
-	 */
-	bool gapBothDirections;
 
-	void calculateExpectedEventCounts(bool useOnlyRisingEdgeForTrigger);
+	// Which edge(s) to consider for finding the sync point: rise, fall, or both
+	SyncEdge syncEdge;
+
+	// If true, falling edges should be fully ignored on this trigger shape.
+	bool useOnlyRisingEdges;
+
+	void calculateExpectedEventCounts();
 
 	size_t getExpectedEventCount(TriggerWheel channelIndex) const;
 
@@ -196,36 +170,40 @@ public:
 
 	bool isRiseEvent[PWM_PHASE_MAX_COUNT];
 
-	bool useOnlyRisingEdgeForTriggerTemp;
-
-	/* (0..1] angle range */
-	void addEvent(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state);
+	/**
+	 * @param angle (0..1]
+	 */
+	void addEvent(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex = TriggerWheel::T_PRIMARY);
 	/* (0..720] angle range
 	 * Deprecated! many usages should be replaced by addEvent360
 	 */
-	void addEvent720(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state);
+	void addEvent720(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex = TriggerWheel::T_PRIMARY);
 
 	/**
 	 * this method helps us use real world 360 degrees shape for FOUR_STROKE_CAM_SENSOR and FOUR_STROKE_CRANK_SENSOR
 	 */
-	void addEvent360(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state);
+	void addEvent360(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex = TriggerWheel::T_PRIMARY);
 
 	/**
+	 * This version of the method is best when same wheel could be mounted either on crank or cam
+	 *
 	 * This version of 'addEvent...' family considers the angle duration of operationMode in this trigger
 	 * For example, (0..180] for FOUR_STROKE_SYMMETRICAL_CRANK_SENSOR
 	 *
 	 * TODO: one day kill all usages with FOUR_STROKE_CAM_SENSOR 720 cycle and add runtime prohibition
 	 * TODO: for FOUR_STROKE_CAM_SENSOR addEvent360 is the way to go
+	 *
+	 * @param angle (0..360] or (0..720] depending on configuration
 	 */
-	void addEventAngle(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state);
+	void addEventAngle(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex = TriggerWheel::T_PRIMARY);
 
 	/* (0..720] angle range
 	 * Deprecated?
 	 */
-	void addEventClamped(angle_t angle, TriggerWheel const channelIndex, TriggerValue const stateParam, float filterLeft, float filterRight);
+	void addEventClamped(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex, float filterLeft, float filterRight);
 	operation_mode_e getWheelOperationMode() const;
 
-	void initialize(operation_mode_e operationMode);
+	void initialize(operation_mode_e operationMode, SyncEdge syncEdge);
 	void setTriggerSynchronizationGap(float syncRatio);
 	void setTriggerSynchronizationGap3(int index, float syncRatioFrom, float syncRatioTo);
 	void setTriggerSynchronizationGap2(float syncRatioFrom, float syncRatioTo);
@@ -239,7 +217,6 @@ public:
 	size_t getSize() const;
 
 	int getTriggerWaveformSynchPointIndex() const;
-	void prepareShape(TriggerFormDetails& details);
 
 	/**
 	 * This private method should only be used to prepare the array of pre-calculated values
@@ -282,10 +259,6 @@ private:
 	operation_mode_e operationMode;
 };
 
-#ifndef MAX
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#endif
-
 /**
  * Misc values calculated from TriggerWaveform
  */
@@ -299,15 +272,3 @@ public:
 	 */
 	angle_t eventAngles[2 * PWM_PHASE_MAX_COUNT];
 };
-
-void findTriggerPosition(
-		TriggerWaveform *shape,
-		TriggerFormDetails *details,
-		event_trigger_position_s *position,
-		angle_t angle);
-
-void setToothedWheelConfiguration(TriggerWaveform *s, int total, int skipped, operation_mode_e operationMode);
-
-#define TRIGGER_WAVEFORM(x) engine->triggerCentral.triggerShape.x
-
-#define getTriggerSize() TRIGGER_WAVEFORM(wave.phaseCount)

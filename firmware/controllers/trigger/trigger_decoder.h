@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include "global.h"
 #include "trigger_structure.h"
-#include "engine_configuration.h"
 #include "trigger_state_generated.h"
 #include "trigger_state_primary_generated.h"
 #include "timer.h"
@@ -31,14 +29,33 @@ public:
 	void update();
 
 	const char* const PrintPrefix;
-	bool UseOnlyRisingEdgeForTrigger;
 	bool VerboseTriggerSynchDetails;
 	trigger_config_s TriggerType;
 
 protected:
-	virtual bool isUseOnlyRisingEdgeForTrigger() const = 0;
 	virtual bool isVerboseTriggerSynchDetails() const = 0;
 	virtual trigger_config_s getType() const = 0;
+};
+
+class PrimaryTriggerConfiguration final : public TriggerConfiguration {
+public:
+	PrimaryTriggerConfiguration() : TriggerConfiguration("TRG ") {}
+
+protected:
+	bool isVerboseTriggerSynchDetails() const override;
+	trigger_config_s getType() const override;
+};
+
+class VvtTriggerConfiguration final : public TriggerConfiguration {
+public:
+	const int index;
+
+	VvtTriggerConfiguration(const char * prefix, const int index) : TriggerConfiguration(prefix), index(index) {
+	}
+
+protected:
+	bool isVerboseTriggerSynchDetails() const override;
+	trigger_config_s getType() const override;
 };
 
 typedef struct {
@@ -75,7 +92,7 @@ public:
 	 */
 	void incrementShaftSynchronizationCounter();
 
-	efitime_t getTotalEventCounter() const;
+	int64_t getTotalEventCounter() const;
 
 	expected<TriggerDecodeResult> decodeTriggerEvent(
 			const char *msg,
@@ -83,7 +100,7 @@ public:
 			TriggerStateListener* triggerStateListener,
 			const TriggerConfiguration& triggerConfiguration,
 			const trigger_event_e signal,
-			const efitime_t nowUs);
+			const efitick_t nowNt);
 
 	void onShaftSynchronization(
 			bool wasSynchronized,
@@ -118,7 +135,7 @@ public:
 	uint32_t totalTriggerErrorCounter;
 	uint32_t orderingErrorCounter;
 
-	virtual void resetTriggerState();
+	virtual void resetState();
 	void setShaftSynchronized(bool value);
 	bool getShaftSynchronized();
 
@@ -134,7 +151,7 @@ public:
 			);
 
 	bool someSortOfTriggerError() const {
-		return !m_timeSinceDecodeError.getElapsedSeconds(1);
+		return !m_timeSinceDecodeError.hasElapsedSec(1);
 	}
 
 protected:
@@ -144,8 +161,8 @@ protected:
 	//  - Saw a sync point but the wrong number of events in the cycle
 	virtual void onTriggerError() { }
 
-	virtual void onNotEnoughTeeth(int actual, int expected) { }
-	virtual void onTooManyTeeth(int actual, int expected) { }
+	virtual void onNotEnoughTeeth(int, int) { }
+	virtual void onTooManyTeeth(int, int) { }
 
 private:
 	void resetCurrentCycleState();
@@ -161,17 +178,13 @@ private:
 	Timer m_timeSinceDecodeError;
 };
 
-// we only need 90 degrees of events so /4 or maybe even /8 should work?
-#define PRE_SYNC_EVENTS (PWM_PHASE_MAX_COUNT / 4)
-
-
 /**
  * the reason for sub-class is simply to save RAM but not having statistics in the trigger initialization instance
  */
 class PrimaryTriggerDecoder : public TriggerDecoderBase, public trigger_state_primary_s {
 public:
 	PrimaryTriggerDecoder(const char* name);
-	void resetTriggerState() override;
+	void resetState() override;
 
 	void resetHasFullSync() {
 		// If this trigger doesn't need disambiguation, we already have phase sync
@@ -179,39 +192,6 @@ public:
 	}
 
 	angle_t syncEnginePhase(int divider, int remainder, angle_t engineCycle);
-
-	float getInstantRpm() const {
-		return m_instantRpm;
-	}
-
-	/**
-	 * timestamp of each trigger wheel tooth
-	 */
-	uint32_t timeOfLastEvent[PWM_PHASE_MAX_COUNT];
-
-	int spinningEventIndex = 0;
-	// todo: change the implementation to reuse 'timeOfLastEvent'
-	uint32_t spinningEvents[PRE_SYNC_EVENTS];
-	/**
-	 * instant RPM calculated at this trigger wheel tooth
-	 */
-	float instantRpmValue[PWM_PHASE_MAX_COUNT];
-	/**
-	 * Stores last non-zero instant RPM value to fix early instability
-	 */
-	float prevInstantRpmValue = 0;
-	void movePreSynchTimestamps();
-
-#if EFI_ENGINE_CONTROL && EFI_SHAFT_POSITION_INPUT
-	void updateInstantRpm(
-		TriggerWaveform const & triggerShape, TriggerFormDetails *triggerFormDetails,
-		uint32_t index, efitick_t nowNt);
-#endif
-	/**
-	 * Update timeOfLastEvent[] on every trigger event - even without synchronization
-	 * Needed for early spin-up RPM detection.
-	 */
-	void setLastEventTimeForInstantRpm(efitick_t nowNt);
 
 	// Returns true if syncEnginePhase has been called,
 	// i.e. if we have enough VVT information to have full sync on
@@ -232,14 +212,6 @@ public:
 	void onTooManyTeeth(int actual, int expected) override;
 
 private:
-	float calculateInstantRpm(
-		TriggerWaveform const & triggerShape, TriggerFormDetails *triggerFormDetails,
-		uint32_t index, efitick_t nowNt);
-
-	void resetInstantRpm();
-
-	float m_instantRpm = 0;
-	float m_instantRpmRatio = 0;
 
 	bool m_needsDisambiguation = false;
 };
@@ -253,9 +225,3 @@ public:
 };
 
 angle_t getEngineCycle(operation_mode_e operationMode);
-
-void calculateTriggerSynchPoint(
-	TriggerWaveform& shape,
-	TriggerDecoderBase& state);
-
-void prepareEventAngles(TriggerWaveform *shape, TriggerFormDetails *details);

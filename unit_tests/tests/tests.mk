@@ -13,16 +13,19 @@ TESTS_SRC_CPP = \
 	tests/trigger/test_real_cranking_miata_na6.cpp \
 	tests/trigger/test_real_cranking_nissan_vq40.cpp \
 	tests/trigger/test_trigger_skipped_wheel.cpp \
+	tests/trigger/test_real_4b11.cpp \
 	tests/trigger/test_real_volkswagen.cpp \
 	tests/trigger/test_real_nb2_cranking.cpp \
 	tests/trigger/test_real_gm_24x.cpp \
 	tests/trigger/test_real_k24a2.cpp \
+	tests/trigger/test_real_k20.cpp \
 	tests/trigger/test_map_cam.cpp \
 	tests/trigger/test_rpm_multiplier.cpp \
 	tests/trigger/test_quad_cam.cpp \
 	tests/trigger/test_nissan_vq_vvt.cpp \
 	tests/trigger/test_override_gaps.cpp \
 	tests/trigger/test_injection_scheduling.cpp \
+	tests/sent/test_sent.cpp \
 	tests/ignition_injection/injection_mode_transition.cpp \
 	tests/ignition_injection/test_startOfCrankingPrimingPulse.cpp \
 	tests/ignition_injection/test_multispark.cpp \
@@ -36,10 +39,12 @@ TESTS_SRC_CPP = \
 	tests/lua/test_lua_e65.cpp \
 	tests/lua/test_lua_ford.cpp \
 	tests/lua/test_lua_vag.cpp \
+	tests/lua/test_lua_nissan.cpp \
 	tests/lua/test_lua_with_engine.cpp \
 	tests/lua/test_lua_hooks.cpp \
 	tests/lua/test_lua_Leiderman_Khlystov.cpp \
 	tests/lua/test_can_filter.cpp \
+	tests/lua/test_lua_vin.cpp \
 	tests/sensor/test_cj125.cpp \
 	tests/test_change_engine_type.cpp \
 	tests/util/test_scaled_channel.cpp \
@@ -54,7 +59,6 @@ TESTS_SRC_CPP = \
 	tests/test_fasterEngineSpinningUp.cpp \
 	tests/test_dwell_corner_case_issue_796.cpp \
 	tests/test_idle_controller.cpp \
-	tests/test_issue_898.cpp \
 	tests/test_launch.cpp \
 	tests/test_fuel_map.cpp \
 	tests/test_gear_detector.cpp \

@@ -2,10 +2,12 @@ package com.rusefi.test;
 
 import com.rusefi.BitState;
 import com.rusefi.ReaderState;
+import com.rusefi.newparse.outputs.OutputChannelWriter;
 import com.rusefi.output.DataLogConsumer;
 import com.rusefi.output.GaugeConsumer;
 import com.rusefi.output.GetOutputValueConsumer;
 import com.rusefi.output.OutputsSectionConsumer;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -35,24 +37,46 @@ public class OutputsTest {
                 "root_tCharge = scalar, F32, 16, \"\", 1, 0\n" +
                 "; total TS size = 20\n";
         assertEquals(expected, parseToOutputChannels(test));
+
+        String expectedLegacy = "afr_type = scalar, F32, 0, \"ms\", 1, 0\n" +
+                "afr_typet = scalar, U08, 4, \"ms\", 1, 0\n" +
+                "isForcedInduction = bits, U32, 8, [0:0]\n" +
+                "enableFan1WithAc = bits, U32, 8, [1:1]\n" +
+                "m_requested_pump = scalar, F32, 12, \"\", 1, 0\n" +
+                "tCharge = scalar, F32, 16, \"\", 1, 0\n" +
+                "; total TS size = 20\n";
+        assertEquals(expectedLegacy, runOriginalImplementation(test, state).getContent());
     }
 
     @Test(expected = BitState.TooManyBitsInARow.class)
-    public void tooManyBits() throws IOException {
+    public void tooManyBits() {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 40; i++)
             sb.append("bit b" + i + "\n");
         String test = "struct total\n" +
                 sb +
                 "end_struct\n";
+        runOriginalImplementation(test);
+    }
+
+    /**
+     * while we have {@link OutputChannelWriter} here we use the current 'legacy' implementation
+     */
+    private static OutputsSectionConsumer runOriginalImplementation(String test) {
         ReaderState state = new ReaderState();
 
+        return runOriginalImplementation(test, state);
+    }
+
+    @NotNull
+    private static OutputsSectionConsumer runOriginalImplementation(String test, ReaderState state) {
         OutputsSectionConsumer tsProjectConsumer = new OutputsSectionConsumer(null);
         state.readBufferedReader(test, tsProjectConsumer);
+        return tsProjectConsumer;
     }
 
     @Test
-    public void generateDataLog() throws IOException {
+    public void generateDataLog() {
         String test = "struct total\n" +
                 "bit issue_294_31,\"si_example\",\"nada_example\"\n" +
                 "uint8_t[2 iterate] autoscale knock;;\"\",1, 0, 0, 0, 0\n" +
@@ -89,7 +113,7 @@ public class OutputsTest {
     }
 
     @Test
-    public void generateDataLogMultiLineCommentWithQuotes() throws IOException {
+    public void generateDataLogMultiLineCommentWithQuotes() {
         String test = "#define GAUGE_NAME_FUEL_BASE \"fuel: base mass\"\n" +
                 "struct total\n" +
                 "\tuint16_t autoscale baseFuel;@@GAUGE_NAME_FUEL_BASE@@\\nThis is the raw value we take from the fuel map or base fuel algorithm, before the corrections;\"mg\",1, 0, 0, 0, 0\n" +
@@ -104,12 +128,12 @@ public class OutputsTest {
         assertEquals(
                 "entry = baseFuel, \"fuel: base mass\", int,    \"%d\"\n" +
                         "entry = baseFuel2, \"line1\", int,    \"%d\"\n"
-                        , dataLogConsumer.getContent());
+                , dataLogConsumer.getContent());
 
     }
 
     @Test
-    public void generateGetOutputs() throws IOException {
+    public void generateGetOutputs() {
         String test = "struct_no_prefix ts_outputs_s\n" +
                 "bit issue_294_31,\"si_example\",\"nada_example\"\n" +
                 "bit enableFan1WithAc;+Turn on this fan when AC is on.\n" +
@@ -134,7 +158,7 @@ public class OutputsTest {
     }
 
     @Test
-    public void sensorStruct() throws IOException {
+    public void sensorStruct() {
         String test = "struct total\n" +
                 "    struct pid_status_s\n" +
                 "    \tfloat iTerm;;\"v\", 1, 0, -10000, 10000, 4\n" +
@@ -164,10 +188,10 @@ public class OutputsTest {
     }
 
     @Test
-    public void testLongIterate() throws IOException {
+    public void testLongIterate() {
         ReaderState state = new ReaderState();
         String test = "struct total\n" +
-"\tint[3 iterate] triggerSimulatorPins;Each rusEFI piece can provide synthetic trigger signal for external ECU. Sometimes these wires are routed back into trigger inputs of the same rusEFI board.\\nSee also directSelfStimulation which is different.\n" +
+                "\tint[3 iterate] triggerSimulatorPins;Each rusEFI piece can provide synthetic trigger signal for external ECU. Sometimes these wires are routed back into trigger inputs of the same rusEFI board.\\nSee also directSelfStimulation which is different.\n" +
                 "end_struct\n";
         TestTSProjectConsumer tsProjectConsumer = new TestTSProjectConsumer("", state);
         state.readBufferedReader(test, tsProjectConsumer);
@@ -175,5 +199,31 @@ public class OutputsTest {
                 "\ttriggerSimulatorPins1 = \"Each rusEFI piece can provide synthetic trigger signal for external ECU. Sometimes these wires are routed back into trigger inputs of the same rusEFI board.\"\n" +
                         "\ttriggerSimulatorPins2 = \"Each rusEFI piece can provide synthetic trigger signal for external ECU. Sometimes these wires are routed back into trigger inputs of the same rusEFI board.\"\n" +
                         "\ttriggerSimulatorPins3 = \"Each rusEFI piece can provide synthetic trigger signal for external ECU. Sometimes these wires are routed back into trigger inputs of the same rusEFI board.\"\n", tsProjectConsumer.getSettingContextHelp().toString());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void nameDuplicate() {
+        String test = "struct total\n" +
+                "float afr_type;PID dTime;\"ms\",      1,      0,       0, 3000,      0\n" +
+                "uint8_t afr_type;123;\"ms\",      1,      0,       0, 3000,      0\n" +
+                "end_struct\n";
+
+
+        String expectedLegacy = "afr_type = scalar, F32, 0, \"ms\", 1, 0\n" +
+                "afr_type = scalar, U08, 0, \"ms\", 1, 0\n" +
+                "; total TS size = 1\n";
+        assertEquals(expectedLegacy, runOriginalImplementation(test).getContent());
+    }
+
+    @Test
+    public void nameNotDuplicate() {
+        String test = "struct total\n" +
+                "float afr_type;PID dTime;\"ms\",      1,      0,       0, 3000,      0\n" +
+                "struct afr_type\n" +
+                "float afr_type2;PID dTime;\"ms\",      1,      0,       0, 3000,      0\n" +
+                "end_struct\n" +
+                "end_struct\n";
+
+        runOriginalImplementation(test);
     }
 }

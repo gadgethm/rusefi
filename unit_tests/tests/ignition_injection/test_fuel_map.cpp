@@ -85,20 +85,19 @@ TEST(misc, testFuelMap) {
 
 
 static void configureFordAspireTriggerWaveform(TriggerWaveform * s) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
-	s->useOnlyRisingEdgeForTriggerTemp = false;
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Rise);
 
-	s->addEvent720(53.747, TriggerWheel::T_SECONDARY, TriggerValue::RISE);
-	s->addEvent720(121.90, TriggerWheel::T_SECONDARY, TriggerValue::FALL);
-	s->addEvent720(232.76, TriggerWheel::T_SECONDARY, TriggerValue::RISE);
-	s->addEvent720(300.54, TriggerWheel::T_SECONDARY, TriggerValue::FALL);
-	s->addEvent720(360, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
+	s->addEvent720(53.747, TriggerValue::RISE, TriggerWheel::T_SECONDARY);
+	s->addEvent720(121.90, TriggerValue::FALL, TriggerWheel::T_SECONDARY);
+	s->addEvent720(232.76, TriggerValue::RISE, TriggerWheel::T_SECONDARY);
+	s->addEvent720(300.54, TriggerValue::FALL, TriggerWheel::T_SECONDARY);
+	s->addEvent720(360, TriggerValue::RISE, TriggerWheel::T_PRIMARY);
 
-	s->addEvent720(409.8412, TriggerWheel::T_SECONDARY, TriggerValue::RISE);
-	s->addEvent720(478.6505, TriggerWheel::T_SECONDARY, TriggerValue::FALL);
-	s->addEvent720(588.045, TriggerWheel::T_SECONDARY, TriggerValue::RISE);
-	s->addEvent720(657.03, TriggerWheel::T_SECONDARY, TriggerValue::FALL);
-	s->addEvent720(720, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent720(409.8412, TriggerValue::RISE, TriggerWheel::T_SECONDARY);
+	s->addEvent720(478.6505, TriggerValue::FALL, TriggerWheel::T_SECONDARY);
+	s->addEvent720(588.045, TriggerValue::RISE, TriggerWheel::T_SECONDARY);
+	s->addEvent720(657.03, TriggerValue::FALL, TriggerWheel::T_SECONDARY);
+	s->addEvent720(720, TriggerValue::FALL, TriggerWheel::T_PRIMARY);
 
 	ASSERT_FLOAT_EQ(53.747 / 720, s->wave.getSwitchTime(0));
 	ASSERT_EQ( TriggerValue::RISE,  s->wave.getChannelState(1, 0)) << "@0";
@@ -150,32 +149,32 @@ TEST(misc, testAngleResolver) {
 	event_trigger_position_s injectionStart;
 
 	printf("*************************************************** testAngleResolver 0\r\n");
-	findTriggerPosition(&engine->triggerCentral.triggerShape, &engine->triggerCentral.triggerFormDetails,&injectionStart, -122);
+	injectionStart.setAngle(-122);
 	ASSERT_EQ( 2,  injectionStart.triggerEventIndex) << "eventIndex@0";
 	ASSERT_NEAR(0.24, injectionStart.angleOffsetFromTriggerEvent, EPS5D);
 
 	printf("*************************************************** testAngleResolver 0.1\r\n");
-	findTriggerPosition(&engine->triggerCentral.triggerShape, &engine->triggerCentral.triggerFormDetails,&injectionStart, -80);
+	injectionStart.setAngle(-80);
 	ASSERT_EQ( 2,  injectionStart.triggerEventIndex) << "eventIndex@0";
 	ASSERT_FLOAT_EQ(42.24, injectionStart.angleOffsetFromTriggerEvent);
 
 	printf("*************************************************** testAngleResolver 0.2\r\n");
-	findTriggerPosition(&engine->triggerCentral.triggerShape, &engine->triggerCentral.triggerFormDetails,&injectionStart, -54);
+	injectionStart.setAngle(-54);
 	ASSERT_EQ( 2,  injectionStart.triggerEventIndex) << "eventIndex@0";
 	ASSERT_FLOAT_EQ(68.2400, injectionStart.angleOffsetFromTriggerEvent);
 
 	printf("*************************************************** testAngleResolver 0.3\r\n");
-	findTriggerPosition(&engine->triggerCentral.triggerShape, &engine->triggerCentral.triggerFormDetails,&injectionStart, -53);
+	injectionStart.setAngle(-53);
 	ASSERT_EQ(2, injectionStart.triggerEventIndex);
 	ASSERT_FLOAT_EQ(69.24, injectionStart.angleOffsetFromTriggerEvent);
 
 	printf("*************************************************** testAngleResolver 1\r\n");
-	findTriggerPosition(&engine->triggerCentral.triggerShape, &engine->triggerCentral.triggerFormDetails,&injectionStart, 0);
+	injectionStart.setAngle(0);
 	ASSERT_EQ(2, injectionStart.triggerEventIndex);
 	ASSERT_FLOAT_EQ(122.24, injectionStart.angleOffsetFromTriggerEvent);
 
 	printf("*************************************************** testAngleResolver 2\r\n");
-	findTriggerPosition(&engine->triggerCentral.triggerShape, &engine->triggerCentral.triggerFormDetails,&injectionStart, 56);
+	injectionStart.setAngle(56);
 	ASSERT_EQ(2, injectionStart.triggerEventIndex);
 	ASSERT_FLOAT_EQ(178.24, injectionStart.angleOffsetFromTriggerEvent);
 

@@ -288,32 +288,34 @@ void EngineTestHelper::fireTriggerEvents(int count) {
 	fireTriggerEvents2(count, 5); // 5ms
 }
 
-void EngineTestHelper::assertInjectorUpEvent(const char *msg, int eventIndex, efitime_t momentX, long injectorIndex) {
+void EngineTestHelper::assertInjectorUpEvent(const char *msg, int eventIndex, efitimeus_t momentX, long injectorIndex) {
 	InjectionEvent *event = &engine.injectionEvents.elements[injectorIndex];
 	assertEvent(msg, eventIndex, (void*)turnInjectionPinHigh, momentX, event);
 }
 
-void EngineTestHelper::assertInjectorDownEvent(const char *msg, int eventIndex, efitime_t momentX, long injectorIndex) {
+void EngineTestHelper::assertInjectorDownEvent(const char *msg, int eventIndex, efitimeus_t momentX, long injectorIndex) {
 	InjectionEvent *event = &engine.injectionEvents.elements[injectorIndex];
 	assertEvent(msg, eventIndex, (void*)turnInjectionPinLow, momentX, event);
 }
 
-scheduling_s * EngineTestHelper::assertEvent5(const char *msg, int index, void *callback, efitime_t expectedTimestamp) {
+scheduling_s * EngineTestHelper::assertEvent5(const char *msg, int index, void *callback, efitimeus_t expectedTimestamp) {
 	TestExecutor *executor = &engine.executor;
 	EXPECT_TRUE(executor->size() > index) << msg << " valid index";
 	scheduling_s *event = executor->getForUnitTest(index);
 	assertEqualsM4(msg, " callback up/down", (void*)event->action.getCallback() == (void*) callback, 1);
-	efitime_t start = getTimeNowUs();
+	efitimeus_t start = getTimeNowUs();
 	assertEqualsM4(msg, " timestamp", expectedTimestamp, event->momentX - start);
 	return event;
 }
 
-AngleBasedEvent * EngineTestHelper::assertTriggerEvent(const char *msg,
-		int index, AngleBasedEvent *expected,
+AngleBasedEventBase * EngineTestHelper::assertTriggerEvent(const char *msg,
+		int index, AngleBasedEventBase *expected,
 		void *callback,
 		int triggerEventIndex, angle_t angleOffsetFromTriggerEvent) {
-	AngleBasedEvent * event =
+	AngleBasedEventBase * event2 =
 		engine.module<TriggerScheduler>()->getElementAtIndexForUnitTest(index);
+
+	auto event = event2->asOld();
 
 	assertEqualsM4(msg, " callback up/down", (void*)event->action.getCallback() == (void*) callback, 1);
 
@@ -322,12 +324,12 @@ AngleBasedEvent * EngineTestHelper::assertTriggerEvent(const char *msg,
 	return event;
 }
 
-scheduling_s * EngineTestHelper::assertScheduling(const char *msg, int index, scheduling_s *expected, void *callback, efitime_t expectedTimestamp) {
+scheduling_s * EngineTestHelper::assertScheduling(const char *msg, int index, scheduling_s *expected, void *callback, efitimeus_t expectedTimestamp) {
 	scheduling_s * actual = assertEvent5(msg, index, callback, expectedTimestamp);
 	return actual;
 }
 
-void EngineTestHelper::assertEvent(const char *msg, int index, void *callback, efitime_t momentX, InjectionEvent *expectedEvent) {
+void EngineTestHelper::assertEvent(const char *msg, int index, void *callback, efitimeus_t momentX, InjectionEvent *expectedEvent) {
 	scheduling_s *event = assertEvent5(msg, index, callback, momentX);
 
 	InjectionEvent *actualEvent = (InjectionEvent *)event->action.getArgument();

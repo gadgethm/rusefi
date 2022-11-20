@@ -21,10 +21,26 @@
 using namespace luaaa;
 
 #include "script_impl.h"
+#include "trigger_emulator_algo.h"
 
 #if EFI_PROD_CODE
 #include "electronic_throttle_impl.h"
-#endif
+#endif // EFI_PROD_CODE
+
+#if EFI_SENT_SUPPORT
+#include "sent.h"
+#endif // EFI_SENT_SUPPORT
+
+static int lua_vin(lua_State* l) {
+	auto zeroBasedCharIndex = luaL_checkinteger(l, 1);
+	if (zeroBasedCharIndex < 0 || zeroBasedCharIndex > VIN_NUMBER_SIZE) {
+		lua_pushnil(l);
+	} else {
+		char value = engineConfiguration->vinNumber[zeroBasedCharIndex];
+		lua_pushnumber(l, value);
+	}
+	return 1;
+}
 
 static int lua_readpin(lua_State* l) {
 	auto msg = luaL_checkstring(l, 1);
@@ -58,7 +74,7 @@ static int lua_getAuxAnalog(lua_State* l) {
 	// todo: shall we use HUMAN_INDEX since UI goes from 1 and Lua loves going from 1?
 	auto zeroBasedSensorIndex = luaL_checkinteger(l, 1);
 
-	auto type = static_cast<SensorType>(zeroBasedSensorIndex + static_cast<int>(SensorType::Aux1));
+	auto type = static_cast<SensorType>(zeroBasedSensorIndex + static_cast<int>(SensorType::AuxAnalog1));
 
 	return getSensor(l, type);
 }
@@ -399,6 +415,19 @@ struct LuaSensor final : public StoredValueSensor {
 		}
 	}
 
+	bool isRedundant() const override {
+		return m_isRedundant;
+	}
+
+	// do we need method defined exactly on LuaSensor for Luaa to be happy?
+	void setTimeout(int timeoutMs) override {
+	    StoredValueSensor::setTimeout(timeoutMs);
+	}
+
+	void setRedundant(bool value) {
+		m_isRedundant = value;
+	}
+
 	void set(float value) {
 		setValidValue(value, getTimeNowNt());
 	}
@@ -408,6 +437,8 @@ struct LuaSensor final : public StoredValueSensor {
 	}
 
 	void showInfo(const char*) const {}
+private:
+	bool m_isRedundant = false;
 };
 
 struct LuaPid final {
@@ -573,6 +604,8 @@ void configureRusefiLuaHooks(lua_State* l) {
 	luaSensor
 		.ctor<lua_State*, const char*>()
 		.fun("set", &LuaSensor::set)
+		.fun("setRedundant", &LuaSensor::setRedundant)
+		.fun("setTimeout", &LuaSensor::setTimeout)
 		.fun("invalidate", &LuaSensor::invalidate);
 
 	LuaClass<LuaPid> luaPid(l, "Pid");
@@ -585,6 +618,7 @@ void configureRusefiLuaHooks(lua_State* l) {
 	configureRusefiLuaUtilHooks(l);
 
 	lua_register(l, "readPin", lua_readpin);
+	lua_register(l, "vin", lua_vin);
 	lua_register(l, "getAuxAnalog", lua_getAuxAnalog);
 	lua_register(l, "getSensorByIndex", lua_getSensorByIndex);
 	lua_register(l, "getSensor", lua_getSensorByName);
@@ -613,49 +647,26 @@ void configureRusefiLuaHooks(lua_State* l) {
 		return 1;
 	});
 
-	lua_register(l, "findCurveIndex", [](lua_State* l) {
-		auto name = luaL_checklstring(l, 1, nullptr);
-		auto result = getCurveIndexByName(name);
-		if (!result) {
-			lua_pushnil(l);
-		} else {
-			// TS counts curve from 1 so convert indexing here
-			lua_pushnumber(l, result.Value + HUMAN_OFFSET);
-		}
-		return 1;
-	});
-
-#if EFI_CAN_SUPPORT || EFI_UNIT_TEST
-	lua_register(l, "txCan", lua_txCan);
-#endif
-
-	lua_register(l, "findTableIndex",
+#if EFI_SENT_SUPPORT
+	lua_register(l, "getSentValue",
 			[](lua_State* l) {
-			auto name = luaL_checklstring(l, 1, nullptr);
-			auto index = getTableIndexByName(name);
-			if (!index) {
-				lua_pushnil(l);
-			} else {
-				// TS counts curve from 1 so convert indexing here
-				lua_pushnumber(l, index.Value + HUMAN_OFFSET);
-			}
+			auto humanIndex = luaL_checkinteger(l, 1);
+			auto value = getSentValue(humanIndex - 1);
+			lua_pushnumber(l, value);
 			return 1;
 	});
 
-	lua_register(l, "findSetting",
+	lua_register(l, "getSentValues",
 			[](lua_State* l) {
-			auto name = luaL_checklstring(l, 1, nullptr);
-			auto defaultValue = luaL_checknumber(l, 2);
-
-			auto index = getSettingIndexByName(name);
-			if (!index) {
-				lua_pushnumber(l, defaultValue);
-			} else {
-				// TS counts curve from 1 so convert indexing here
-				lua_pushnumber(l, engineConfiguration->scriptSetting[index.Value]);
-			}
-			return 1;
+			uint16_t sig0;
+			uint16_t sig1;
+			auto humanIndex = luaL_checkinteger(l, 1);
+			auto ret = getSentValues(humanIndex - 1, &sig0, &sig1);
+			lua_pushnumber(l, sig0);
+			lua_pushnumber(l, sig1);
+			return 2;
 	});
+#endif // EFI_SENT_SUPPORT
 
 #if EFI_LAUNCH_CONTROL
 	lua_register(l, "setSparkSkipRatio", [](lua_State* l) {
@@ -665,10 +676,47 @@ void configureRusefiLuaHooks(lua_State* l) {
 	});
 #endif // EFI_LAUNCH_CONTROL
 
+#if !EFI_UNIT_TEST
+	lua_register(l, "selfStimulateRPM", [](lua_State* l) {
+		auto rpm = luaL_checkinteger(l, 1);
+		if (rpm < 1) {
+			disableTriggerStimulator();
+			return 0;
+		}
+		if (!engine->triggerCentral.directSelfStimulation) {
+		    enableTriggerStimulator();
+		}
+        setTriggerEmulatorRPM(rpm);
+		return 0;
+	});
+#endif // EFI_UNIT_TEST
+
+	/**
+	 * same exact could be accomplished via LuaSensor just with more API
+	 */
+	lua_register(l, "setLuaGauge", [](lua_State* l) {
+		auto index = luaL_checkinteger(l, 1) - 1;
+		auto value = luaL_checknumber(l, 2);
+		if (index < 0 || index >= LUA_GAUGE_COUNT)
+			return 0;
+		extern StoredValueSensor luaGauges[LUA_GAUGE_COUNT];
+		luaGauges[index].setValidValue(value, getTimeNowNt());
+		return 0;
+	});
+
 	lua_register(l, "enableCanTx", [](lua_State* l) {
 		engine->allowCanTx = lua_toboolean(l, 1);
 		return 0;
 	});
+
+#if EFI_PROD_CODE
+	lua_register(l, "restartEtb", [](lua_State* l) {
+		// this is about Lua sensor acting in place of real analog PPS sensor
+		// todo: smarter implementation
+		doInitElectronicThrottle();
+		return 0;
+	});
+#endif // EFI_PROD_CODE
 
 	lua_register(l, "crc8_j1850", [](lua_State* l) {
 		uint8_t data[8];
@@ -716,6 +764,10 @@ void configureRusefiLuaHooks(lua_State* l) {
 
 		setEtbLuaAdjustment(luaAdjustment);
 
+		return 0;
+	});
+	lua_register(l, "setEtbDisabled", [](lua_State* l) {
+		engine->engineState.lua.luaDisableEtb = lua_toboolean(l, 1);
 		return 0;
 	});
 #endif // EFI_PROD_CODE
@@ -829,4 +881,8 @@ void configureRusefiLuaHooks(lua_State* l) {
 	lua_register(l, "canRxAddMask", lua_canRxAddMask);
 #endif // EFI_CAN_SUPPORT
 #endif // not EFI_UNIT_TEST
+
+#if EFI_CAN_SUPPORT || EFI_UNIT_TEST
+	lua_register(l, "txCan", lua_txCan);
+#endif
 }

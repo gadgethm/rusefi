@@ -11,7 +11,6 @@
  */
 
 #include "pch.h"
-#include "custom_engine.h"
 #include "hellen_meta.h"
 
 static OutputPin alphaEn;
@@ -75,7 +74,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->camInputs[0] = Gpio::Unassigned;
 
 	engineConfiguration->tps1_1AdcChannel = H144_IN_TPS;
-	engineConfiguration->tps2_1AdcChannel = EFI_ADC_NONE;
 
 	engineConfiguration->mafAdcChannel = EFI_ADC_NONE;
 	engineConfiguration->map.sensor.hwChannel = H144_IN_MAP2;
@@ -87,9 +85,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->clt.adcChannel = H144_IN_CLT;
 
 	engineConfiguration->iat.adcChannel = H144_IN_IAT;
-
-	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
-	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
 }
 
 void boardInitHardware() {
@@ -123,8 +118,7 @@ void setBoardConfigOverrides() {
 	engineConfiguration->clt.config.bias_resistor = 4700;
 	engineConfiguration->iat.config.bias_resistor = 4700;
 
-	engineConfiguration->canTxPin = Gpio::D1;
-	engineConfiguration->canRxPin = Gpio::D0;
+	setHellenCan();
 }
 
 /**
@@ -166,4 +160,17 @@ void setBoardDefaultConfiguration() {
 void boardPrepareForStop() {
 	// Wake on the CAN RX pin
 	palEnableLineEvent(PAL_LINE(GPIOD, 0), PAL_EVENT_MODE_RISING_EDGE);
+}
+
+static Gpio OUTPUTS[] = {
+		H144_LS_1,
+		H144_LS_2,
+};
+
+int getBoardMetaOutputsCount() {
+    return efi::size(OUTPUTS);
+}
+
+Gpio* getBoardMetaOutputs() {
+    return OUTPUTS;
 }

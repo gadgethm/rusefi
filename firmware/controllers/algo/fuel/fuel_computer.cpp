@@ -15,7 +15,7 @@ mass_t FuelComputerBase::getCycleFuel(mass_t airmass, int rpm, float load) {
 	float lambda = getTargetLambda(rpm, load);
 	float afr = stoich * lambda;
 
-	currentAfrLoad = load;
+	afrTableYAxis = load;
 	targetLambda = lambda;
 	targetAFR = afr;
 	stoichiometricRatio = stoich;
@@ -30,8 +30,9 @@ float FuelComputer::getStoichiometricRatio() const {
 
 	// Config compatibility: this field may be zero on ECUs with old defaults
 	if (primary < 5) {
+		// todo: fatal in July of 2023
 		// 14.7 = E0 gasoline AFR
-		primary = STOICH_RATIO;
+		engineConfiguration->stoichRatioPrimary = primary = STOICH_RATIO;
 	}
 
 	// Without an ethanol/flex sensor, return primary configured stoich ratio
@@ -44,7 +45,8 @@ float FuelComputer::getStoichiometricRatio() const {
 	// Config compatibility: this field may be zero on ECUs with old defaults
 	if (secondary < 5) {
 		// 9.0 = E100 ethanol AFR
-		secondary = 9.0f;
+		// todo: fatal in July of 2023
+		engineConfiguration->stoichRatioSecondary = secondary = 9.0f;
 	}
 
 	auto flex = Sensor::get(SensorType::FuelEthanolPercent);
@@ -73,7 +75,7 @@ float IFuelComputer::getLoadOverride(float defaultLoad, load_override_e override
 		// TPS/pedal default to 100% - failed TPS goes rich
 		case AFR_Tps: return Sensor::get(SensorType::Tps1).value_or(100);
 		case AFR_AccPedal: return Sensor::get(SensorType::AcceleratorPedal).value_or(100);
-		case AFR_CylFilling: return 100 * engine->fuelComputer->sdAirMassInOneCylinder / getStandardAirCharge();
+		case AFR_CylFilling: return 100 * sdAirMassInOneCylinder / getStandardAirCharge();
 		default: return 0;
 	}
 }

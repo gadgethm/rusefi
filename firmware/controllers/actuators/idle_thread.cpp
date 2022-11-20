@@ -133,8 +133,8 @@ percent_t IdleController::getOpenLoop(Phase phase, float rpm, float clt, SensorR
 	}
 
 	// If coasting (and enabled), use the coasting position table instead of normal open loop
-	useIacTableForCoasting = engineConfiguration->useIacTableForCoasting && isIdleCoasting;
-	if (useIacTableForCoasting) {
+	isIacTableForCoasting = engineConfiguration->useIacTableForCoasting && isIdleCoasting;
+	if (isIacTableForCoasting) {
 		return interpolate2d(rpm, config->iacCoastingRpmBins, config->iacCoasting);
 	}
 
@@ -157,12 +157,6 @@ float IdleController::getIdleTimingAdjustment(int rpm, int targetRpm, Phase phas
 
 	// If not idling, do nothing
 	if (phase != Phase::Idling) {
-		m_timingPid.reset();
-		return 0;
-	}
-
-	// If inside the deadzone, do nothing
-	if (absI(rpm - targetRpm) < engineConfiguration->idleTimingPidDeadZone) {
 		m_timingPid.reset();
 		return 0;
 	}
@@ -364,7 +358,7 @@ float IdleController::getIdlePosition(float rpm) {
 }
 
 void IdleController::onSlowCallback() {
-	float position = getIdlePosition(engine->triggerCentral.triggerState.getInstantRpm());
+	float position = getIdlePosition(engine->triggerCentral.instantRpm.getInstantRpm());
 	applyIACposition(position);
 }
 

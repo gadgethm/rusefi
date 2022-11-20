@@ -11,8 +11,8 @@
  */
 
 #include "pch.h"
-#include "custom_engine.h"
 #include "hellen_meta.h"
+#include "defaults.h"
 
 static OutputPin alphaEn;
 static OutputPin alphaTachPullUp;
@@ -99,12 +99,9 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->triggerInputPins[1] = H144_IN_CAM;
 	engineConfiguration->camInputs[0] = Gpio::Unassigned;
 
-	engineConfiguration->tps1_1AdcChannel = H144_IN_TPS;
-	engineConfiguration->tps1_2AdcChannel = H144_IN_AUX1;
-	engineConfiguration->tps2_1AdcChannel = EFI_ADC_NONE;
+	setTPS1Inputs(H144_IN_TPS, H144_IN_AUX1);
 
-	engineConfiguration->throttlePedalPositionAdcChannel = H144_IN_PPS;
-	engineConfiguration->throttlePedalPositionSecondAdcChannel = H144_IN_AUX2;
+	setPPSInputs(H144_IN_PPS, H144_IN_AUX2);
 
 	// random values to have valid config
 	engineConfiguration->tps1SecondaryMin = 1000;
@@ -120,9 +117,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->clt.adcChannel = H144_IN_CLT;
 
 	engineConfiguration->iat.adcChannel = H144_IN_IAT;
-
-	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
-	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
 }
 
 void boardInitHardware() {
@@ -167,8 +161,7 @@ void setBoardConfigOverrides() {
 	engineConfiguration->clt.config.bias_resistor = 4700;
 	engineConfiguration->iat.config.bias_resistor = 4700;
 
-	engineConfiguration->canTxPin = Gpio::D1;
-	engineConfiguration->canRxPin = Gpio::D0;
+	setHellenCan();
 }
 
 /**
@@ -217,4 +210,19 @@ void setBoardDefaultConfiguration() {
 void boardPrepareForStop() {
 	// Wake on the CAN RX pin
 	palEnableLineEvent(PAL_LINE(GPIOD, 0), PAL_EVENT_MODE_RISING_EDGE);
+}
+
+static Gpio OUTPUTS[] = {
+		H144_LS_1,
+		H144_LS_2,
+		H144_LS_3,
+		H144_LS_4,
+};
+
+int getBoardMetaOutputsCount() {
+    return efi::size(OUTPUTS);
+}
+
+Gpio* getBoardMetaOutputs() {
+    return OUTPUTS;
 }

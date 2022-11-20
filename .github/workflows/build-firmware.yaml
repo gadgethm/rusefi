@@ -5,7 +5,7 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
   build-firmware:
     runs-on: ubuntu-latest
-    
+
     strategy:
       # Let all builds finish even if one fails early
       fail-fast: false
@@ -47,6 +47,7 @@ jobs:
             proteus_f7_hardware_QC_special_build,
             proteus_h7,
             proteus_legacy,
+            stm32f429_nucleo,
             stm32f767_nucleo,
             stm32h743_nucleo,
             subaru_eg33_f7,
@@ -62,16 +63,15 @@ jobs:
           - build-target: hellen72
             folder: hellen/hellen72
             ini-file: rusefi_hellen72.ini
-            skip-rate: 90
 
           - build-target: hellen81
             folder: hellen/hellen81
             ini-file: rusefi_hellen81.ini
+            skip-rate: 90
 
           - build-target: alphax-2chan
             folder: hellen/alphax-2chan
             ini-file: rusefi_alphax-2chan.ini
-            skip-rate: 90
 
           - build-target: alphax-4chan
             folder: hellen/alphax-4chan
@@ -80,28 +80,31 @@ jobs:
           - build-target: harley81
             folder: hellen/harley81
             ini-file: rusefi_harley81.ini
+            skip-rate: 90
 
           - build-target: hellen88bmw
             folder: hellen/hellen88bmw
             ini-file: rusefi_hellen88bmw.ini
+            skip-rate: 90
 
           - build-target: hellen88bmw_avr
             folder: hellen/hellen88bmw
             ini-file: rusefi_hellen88bmw.ini
+            skip-rate: 90
 
           - build-target: hellen-nb1
             folder: hellen/hellen-nb1
             ini-file: rusefi_hellen-nb1.ini
+            skip-rate: 90
 
           - build-target: hellen-gm-e67
             folder: hellen/hellen-gm-e67
             ini-file: rusefi_hellen-gm-e67.ini
-            skip-rate: 90
 
           - build-target: hellenNA8_96
             folder: hellen/hellenNA8_96
             ini-file: rusefi_hellenNA8_96.ini
-            skip-rate: 50
+            skip-rate: 90
 
           - build-target: hellenNA6
             folder: hellen/hellen64_miataNA6_94
@@ -120,7 +123,6 @@ jobs:
           - build-target: hellen121nissan
             folder: hellen/hellen121nissan
             ini-file: rusefi_hellen121nissan.ini
-            skip-rate: 50
 
           - build-target: hellen154hyundai
             folder: hellen/hellen154hyundai
@@ -182,7 +184,6 @@ jobs:
           - build-target: proteus_f4_hardware_QC_special_build
             folder: proteus
             ini-file: rusefi_proteus_f4.ini
-            skip-rate: 90
 
           - build-target: proteus_f7
             folder: proteus
@@ -191,7 +192,6 @@ jobs:
           - build-target: proteus_f7_hardware_QC_special_build
             folder: proteus
             ini-file: rusefi_proteus_f7.ini
-            skip-rate: 90
 
           - build-target: proteus_h7
             folder: proteus
@@ -202,6 +202,11 @@ jobs:
             folder: proteus
             ini-file: rusefi_proteus_f7.ini
             skip-rate: 90
+
+          - build-target: stm32f429_nucleo
+            folder: nucleo_f429
+            ini-file: no
+            skip-config: yes
 
           - build-target: stm32f767_nucleo
             folder: nucleo_f767
@@ -311,10 +316,9 @@ jobs:
       if: ${{ env.skip != 'true' }}
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-      run: | # Compiler hosted on our other git repo - avoids having to download from the nice folks at ARM every time
-        wget 'https://github.com/rusefi/build_support/raw/master/gcc-arm-none-eabi-9-2020-q2-update-x86_64-linux.tar.xz' -O compiler.tar.xz
-        tar -xvf compiler.tar.xz
-        echo "::add-path::`pwd`/gcc-arm-none-eabi-9-2020-q2-update/bin"
+      run: |
+        ./firmware/provide_gcc.sh
+        echo "::add-path::`pwd`/gcc-arm-none-eabi/bin"
 
     # Make sure the compiler we just downloaded works - just print out the version
     - name: Test Compiler
@@ -433,11 +437,10 @@ jobs:
     - name: Download & Install GCC
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
-      run: | # Compiler hosted on our other git repo - avoids having to download from the nice folks at ARM every time
-        wget 'https://github.com/rusefi/build_support/raw/master/gcc-arm-none-eabi-9-2020-q2-update-x86_64-linux.tar.xz' -O compiler.tar.xz
-        tar -xvf compiler.tar.xz
-        echo "::add-path::`pwd`/gcc-arm-none-eabi-9-2020-q2-update/bin"
-  
+      run: |
+        ./firmware/provide_gcc.sh
+        echo "::add-path::`pwd`/gcc-arm-none-eabi/bin"
+
     # Make sure the compiler we just downloaded works - just print out the version
     - name: Test Compiler
       run: arm-none-eabi-gcc -v

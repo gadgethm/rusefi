@@ -192,9 +192,6 @@ void EngineState::periodicFastCallback() {
 #if EFI_LAUNCH_CONTROL
 	engine->launchController.update();
 #endif //EFI_LAUNCH_CONTROL
-
-	engine->limpManager.updateState(rpm, nowNt);
-
 #endif // EFI_ENGINE_CONTROL
 }
 
@@ -218,13 +215,8 @@ void EngineState::updateTChargeK(int rpm, float tps) {
 #endif
 
 void TriggerConfiguration::update() {
-	UseOnlyRisingEdgeForTrigger = isUseOnlyRisingEdgeForTrigger();
 	VerboseTriggerSynchDetails = isVerboseTriggerSynchDetails();
 	TriggerType = getType();
-}
-
-bool PrimaryTriggerConfiguration::isUseOnlyRisingEdgeForTrigger() const {
-	return engineConfiguration->useOnlyRisingEdgeForTrigger;
 }
 
 trigger_config_s PrimaryTriggerConfiguration::getType() const {
@@ -233,10 +225,6 @@ trigger_config_s PrimaryTriggerConfiguration::getType() const {
 
 bool PrimaryTriggerConfiguration::isVerboseTriggerSynchDetails() const {
 	return engineConfiguration->verboseTriggerSynchDetails;
-}
-
-bool VvtTriggerConfiguration::isUseOnlyRisingEdgeForTrigger() const {
-	return engineConfiguration->vvtCamSensorUseRise;
 }
 
 trigger_config_s VvtTriggerConfiguration::getType() const {

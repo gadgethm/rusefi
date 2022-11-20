@@ -64,11 +64,14 @@ extern bool main_loop_started;
 #include "HD44780.h"
 #include "rusefi.h"
 #include "pin_repository.h"
-#include "flash_main.h"
 #include "max31855.h"
 #include "single_timer_executor.h"
 #include "periodic_task.h"
 #endif /* EFI_PROD_CODE */
+
+#if EFI_INTERNAL_FLASH
+#include "flash_main.h"
+#endif
 
 #if EFI_CJ125
 #include "cj125.h"
@@ -110,29 +113,6 @@ extern uint32_t maxLockedDuration;
 static void setWarningEnabled(int value) {
 	warningEnabled = value;
 }
-
-#if EFI_FILE_LOGGING
-// this one needs to be in main ram so that SD card SPI DMA works fine
-static NO_CACHE char sdLogBuffer[250];
-static uint64_t binaryLogCount = 0;
-
-void writeLogLine(Writer& buffer) {
-	if (!main_loop_started)
-		return;
-
-	if (binaryLogCount == 0) {
-		writeHeader(buffer);
-	} else {
-		updateTunerStudioState();
-		size_t length = writeBlock(sdLogBuffer);
-		efiAssertVoid(OBD_PCM_Processor_Fault, length <= efi::size(sdLogBuffer), "SD log buffer overflow");
-		buffer.write(sdLogBuffer, length);
-	}
-
-	binaryLogCount++;
-}
-
-#endif /* EFI_FILE_LOGGING */
 
 /**
  * This is useful if we are changing engine mode dynamically
@@ -289,43 +269,6 @@ void updateDevConsoleState(void) {
 	scheduleLogging(&logicAnalyzerLogger);
 #endif /* EFI_LOGIC_ANALYZER */
 }
-
-/*
- * command example:
- * sfm 3500 400
- * that would be 'show fuel for rpm 3500 maf 4.0'
- */
-
-static void showFuelInfo2(float rpm, float engineLoad) {
-	efiPrintf("inj flow %.2fcc/min displacement %.2fL", engineConfiguration->injector.flow,
-			engineConfiguration->specs.displacement);
-
-	efiPrintf("algo=%s/pump=%s", getEngine_load_mode_e(engineConfiguration->fuelAlgorithm),
-			boolToString(enginePins.fuelPumpRelay.getLogicValue()));
-
-	efiPrintf("injection phase=%.2f/global fuel correction=%.2f", getInjectionOffset(rpm, getFuelingLoad()), engineConfiguration->globalFuelCorrection);
-
-#if EFI_ENGINE_CONTROL
-	efiPrintf("base cranking fuel %.2f", engineConfiguration->cranking.baseFuel);
-	efiPrintf("cranking fuel: %.2f", engine->engineState.cranking.fuel);
-
-	if (!engine->rpmCalculator.isStopped()) {
-		float iatCorrection = engine->engineState.running.intakeTemperatureCoefficient;
-		float cltCorrection = engine->engineState.running.coolantTemperatureCoefficient;
-		floatms_t injectorLag = engine->module<InjectorModel>()->getDeadtime();
-		efiPrintf("rpm=%.2f engineLoad=%.2f", rpm, engineLoad);
-
-		efiPrintf("iatCorrection=%.2f cltCorrection=%.2f injectorLag=%.2f", iatCorrection, cltCorrection,
-				injectorLag);
-	}
-#endif
-}
-
-#if EFI_ENGINE_CONTROL
-static void showFuelInfo() {
-	showFuelInfo2(Sensor::getOrZero(SensorType::Rpm), getFuelingLoad());
-}
-#endif
 
 static OutputPin *leds[] = { &enginePins.warningLedPin, &enginePins.runningLedPin,
 		&enginePins.errorLedPin, &enginePins.communicationLedPin, &enginePins.checkEnginePin };
@@ -565,9 +508,13 @@ static void updateRawSensors() {
 	engine->outputChannels.rawLowFuelPressure = Sensor::getRaw(SensorType::FuelPressureLow);
 	engine->outputChannels.rawHighFuelPressure = Sensor::getRaw(SensorType::FuelPressureHigh);
 	engine->outputChannels.rawMaf = Sensor::getRaw(SensorType::Maf);
+	engine->outputChannels.rawMaf2 = Sensor::getRaw(SensorType::Maf2);
 	engine->outputChannels.rawMap = Sensor::getRaw(SensorType::MapSlow);
 	engine->outputChannels.rawWastegatePosition = Sensor::getRaw(SensorType::WastegatePosition);
 	engine->outputChannels.rawIdlePositionSensor = Sensor::getRaw(SensorType::IdlePosition);
+
+	engine->outputChannels.luaGauges[0] = Sensor::getOrZero(SensorType::LuaGauge1);
+	engine->outputChannels.luaGauges[1] = Sensor::getOrZero(SensorType::LuaGauge2);
 
 	for (int i = 0;i<AUX_ANALOG_INPUT_COUNT;i++) {
 		adc_channel_e ch = engineConfiguration->auxAnalogInputs[i];
@@ -596,6 +543,8 @@ static void updateMiscSensors() {
 	engine->outputChannels.wastegatePositionSensor = Sensor::getOrZero(SensorType::WastegatePosition);
 
 	engine->outputChannels.ISSValue = Sensor::getOrZero(SensorType::InputShaftSpeed);
+	engine->outputChannels.auxSpeed1 = Sensor::getOrZero(SensorType::AuxSpeed1);
+	engine->outputChannels.auxSpeed2 = Sensor::getOrZero(SensorType::AuxSpeed2);
 
 #if	HAL_USE_ADC
 	engine->outputChannels.internalMcuTemperature = getMCUInternalTemperature();
@@ -625,11 +574,6 @@ static void updateFuelCorrections() {
 	engine->outputChannels.injectorLagMs = engine->module<InjectorModel>()->getDeadtime();
 }
 
-static void updateFuelLoads() {
-	engine->outputChannels.veTableYAxis = engine->engineState.currentVeLoad;
-	engine->outputChannels.afrTableYAxis = engine->fuelComputer->currentAfrLoad;
-}
-
 static void updateFuelResults() {
 	// todo: kill outputChannel while taking care of gauge name and scale!
 	engine->outputChannels.chargeAirMass = engine->fuelComputer->sdAirMassInOneCylinder;
@@ -643,19 +587,17 @@ static void updateFuelResults() {
 
 static void updateFuelInfo() {
 	updateFuelCorrections();
-	updateFuelLoads();
 	updateFuelResults();
 
 	const auto& wallFuel = engine->injectionEvents.elements[0].wallFuel;
 	engine->outputChannels.wallFuelAmount = wallFuel.getWallFuel() * 1000;			// Convert grams to mg
-	engine->outputChannels.wallFuelCorrection = wallFuel.wallFuelCorrection * 1000;	// Convert grams to mg
+	engine->outputChannels.wallFuelCorrectionValue = wallFuel.wallFuelCorrection * 1000;	// Convert grams to mg
 
 	engine->outputChannels.injectionOffset = engine->engineState.injectionOffset;
 
 	engine->outputChannels.veValue = engine->engineState.currentVe;
-	engine->outputChannels.currentTargetAfr = engine->fuelComputer->targetAFR;
 
-	engine->outputChannels.crankingFuelMs = engine->engineState.cranking.fuel;
+	engine->outputChannels.crankingFuelMs = engine->engineState.crankingFuel.fuel;
 }
 
 static void updateIgnition(int rpm) {
@@ -680,9 +622,6 @@ static void updateFlags() {
 	engine->outputChannels.isFanOn = enginePins.fanRelay.getLogicValue();
 	engine->outputChannels.isFan2On = enginePins.fanRelay2.getLogicValue();
 	engine->outputChannels.isO2HeaterOn = enginePins.o2heater.getLogicValue();
-	// todo: eliminate state copy logic by giving limpManager it's owm limp_manager.txt and leveraging LiveData
-	engine->outputChannels.isIgnitionEnabledIndicator = engine->limpManager.allowIgnition().value;
-	engine->outputChannels.isInjectionEnabledIndicator = engine->limpManager.allowInjection().value;
 	// todo: eliminate state copy logic by giving DfcoController it's owm xxx.txt and leveraging LiveData
 	engine->outputChannels.dfcoActive = engine->module<DfcoController>()->cutFuel();
 
@@ -729,7 +668,7 @@ void updateTunerStudioState() {
 
 	// offset 0
 	tsOutputChannels->RPMValue = rpm;
-	auto instantRpm = engine->triggerCentral.triggerState.getInstantRpm();
+	auto instantRpm = engine->triggerCentral.instantRpm.getInstantRpm();
 	tsOutputChannels->instantRpm = instantRpm;
 
 	updateSensors();
@@ -742,11 +681,12 @@ void updateTunerStudioState() {
 
 	// Output both the estimated air flow, and measured air flow (if available)
 	tsOutputChannels->mafMeasured = Sensor::getOrZero(SensorType::Maf);
+	tsOutputChannels->mafMeasured2 = Sensor::getOrZero(SensorType::Maf2);
 	tsOutputChannels->mafEstimate = engine->engineState.airflowEstimate;
 
 	// offset 116
 	// TPS acceleration
-	tsOutputChannels->deltaTps = engine->tpsAccelEnrichment.getMaxDelta();
+	tsOutputChannels->deltaTpsValue = engine->tpsAccelEnrichment.getMaxDelta();
 
 	tsOutputChannels->totalTriggerErrorCounter = engine->triggerCentral.triggerState.totalTriggerErrorCounter;
 
@@ -817,9 +757,11 @@ void updateTunerStudioState() {
 		tsOutputChannels->recentErrorCode[i] = engine->engineState.warnings.recentWarnings.get(i).Code;
 	}
 
-	tsOutputChannels->startStopStateToggleCounter = engine->startStopStateToggleCounter;
 	tsOutputChannels->starterState = enginePins.starterControl.getLogicValue();
 	tsOutputChannels->starterRelayDisable = enginePins.starterRelayDisable.getLogicValue();
+
+	tsOutputChannels->mapFast = Sensor::getOrZero(SensorType::MapFast);
+
 
 	tsOutputChannels->revolutionCounterSinceStart = engine->rpmCalculator.getRevolutionCounterSinceStart();
 #if EFI_CAN_SUPPORT
@@ -827,7 +769,7 @@ void updateTunerStudioState() {
 #endif /* EFI_CAN_SUPPORT */
 
 #if EFI_CLOCK_LOCKS
-		tsOutputChannels->maxLockedDuration = maxLockedDuration;
+		tsOutputChannels->maxLockedDuration = NT2US(maxLockedDuration);
 		tsOutputChannels->maxTriggerReentrant = maxTriggerReentrant;
 #endif /* EFI_CLOCK_LOCKS */
 
@@ -921,11 +863,6 @@ void updateTunerStudioState() {
 
 void initStatusLoop(void) {
 	addConsoleActionI("warn", setWarningEnabled);
-
-#if EFI_ENGINE_CONTROL
-	addConsoleActionFF("fuelinfo2", (VoidFloatFloat) showFuelInfo2);
-	addConsoleAction("fuelinfo", showFuelInfo);
-#endif
 }
 
 void startStatusThreads(void) {

@@ -13,17 +13,14 @@ static FrequencySensor auxSpeed2(SensorType::AuxSpeed2, MS2NT(500));
 static class : public SensorConverter  {
 public:
 	SensorResult convert(float frequency) const override {
-		auto hz = frequency;
-
-		auto rpm = hz * 60;
-
-		return rpm;
+		return frequency;
 	}
 } converter;
 
 
 void initAuxSpeedSensors() {
-	auxSpeed1.initIfValid(engineConfiguration->auxSpeedSensorInputPin[0], converter, 0.05f);
+	auxSpeed1.useBiQuad = engineConfiguration->useBiQuadOnAuxSpeedSensors;
+	auxSpeed1.initIfValid(engineConfiguration->auxSpeedSensorInputPin[0], converter, engineConfiguration->auxFrequencyFilter);
 	auxSpeed2.initIfValid(engineConfiguration->auxSpeedSensorInputPin[1], converter, 0.05f);
 }
 

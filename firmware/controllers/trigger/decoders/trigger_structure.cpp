@@ -43,22 +43,18 @@
 #include "sensor_chart.h"
 #endif /* EFI_SENSOR_CHART */
 
-void event_trigger_position_s::setAngle(angle_t angle) {
-	findTriggerPosition(&engine->triggerCentral.triggerShape,
-			&engine->triggerCentral.triggerFormDetails,
-			this, angle);
-}
-
 TriggerWaveform::TriggerWaveform() {
-	initialize(OM_NONE);
+	initialize(OM_NONE, SyncEdge::Rise);
 }
 
-void TriggerWaveform::initialize(operation_mode_e operationMode) {
+void TriggerWaveform::initialize(operation_mode_e operationMode, SyncEdge syncEdge) {
 	isSynchronizationNeeded = true; // that's default value
-	bothFrontsRequired = false;
 	isSecondWheelCam = false;
 	needSecondTriggerInput = false;
 	shapeWithoutTdc = false;
+
+	// If RiseOnly, ignore falling edges completely.
+	useOnlyRisingEdges = syncEdge == SyncEdge::RiseOnly;
 
 	setTriggerSynchronizationGap(2);
 	for (int gapIndex = 1; gapIndex < GAP_TRACKING_LENGTH ; gapIndex++) {
@@ -69,10 +65,9 @@ void TriggerWaveform::initialize(operation_mode_e operationMode) {
 
 	tdcPosition = 0;
 	shapeDefinitionError = useOnlyPrimaryForSync = false;
-	useRiseEdge = true;
-	gapBothDirections = false;
 
 	this->operationMode = operationMode;
+	this->syncEdge = syncEdge;
 	triggerShapeSynchPointIndex = 0;
 	memset(initialState, 0, sizeof(initialState));
 	memset(expectedEventCount, 0, sizeof(expectedEventCount));
@@ -168,12 +163,12 @@ angle_t TriggerWaveform::getAngle(int index) const {
 	return cycleStartAngle + positionWithinCycle;
 }
 
-void TriggerWaveform::addEventClamped(angle_t angle, TriggerWheel const channelIndex, TriggerValue const stateParam, float filterLeft, float filterRight) {
+void TriggerWaveform::addEventClamped(angle_t angle, TriggerValue const stateParam, TriggerWheel const channelIndex, float filterLeft, float filterRight) {
 	if (angle > filterLeft && angle < filterRight) {
 #if EFI_UNIT_TEST
 //		printf("addEventClamped %f %s\r\n", angle, getTrigger_value_e(stateParam));
 #endif /* EFI_UNIT_TEST */
-		addEvent(angle / getEngineCycle(operationMode), channelIndex, stateParam);
+		addEvent(angle / getEngineCycle(operationMode), stateParam, channelIndex);
 	}
 }
 
@@ -193,8 +188,8 @@ size_t TriggerWaveform::getExpectedEventCount(TriggerWheel channelIndex) const {
 	return expectedEventCount[(int)channelIndex];
 }
 
-void TriggerWaveform::calculateExpectedEventCounts(bool useOnlyRisingEdgeForTrigger) {
-	if (!useOnlyRisingEdgeForTrigger) {
+void TriggerWaveform::calculateExpectedEventCounts() {
+	if (!useOnlyRisingEdges) {
 		for (size_t i = 0; i < efi::size(expectedEventCount); i++) {
 			if (getExpectedEventCount((TriggerWheel)i) % 2 != 0) {
 				firmwareError(ERROR_TRIGGER_DRAMA, "Trigger: should be even number of events index=%d count=%d", i, getExpectedEventCount((TriggerWheel)i));
@@ -202,13 +197,17 @@ void TriggerWaveform::calculateExpectedEventCounts(bool useOnlyRisingEdgeForTrig
 		}
 	}
 
-	bool isSingleToothOnPrimaryChannel = useOnlyRisingEdgeForTrigger ? getExpectedEventCount(TriggerWheel::T_PRIMARY) == 1 : getExpectedEventCount(TriggerWheel::T_PRIMARY) == 2;
+	bool isSingleToothOnPrimaryChannel = useOnlyRisingEdges ? getExpectedEventCount(TriggerWheel::T_PRIMARY) == 1 : getExpectedEventCount(TriggerWheel::T_PRIMARY) == 2;
 	// todo: next step would be to set 'isSynchronizationNeeded' automatically based on the logic we have here
 	if (!shapeWithoutTdc && isSingleToothOnPrimaryChannel != !isSynchronizationNeeded) {
 		firmwareError(ERROR_TRIGGER_DRAMA, "shapeWithoutTdc isSynchronizationNeeded isSingleToothOnPrimaryChannel constraint violation");
 	}
 	if (isSingleToothOnPrimaryChannel) {
 		useOnlyPrimaryForSync = true;
+	} else {
+		if (getExpectedEventCount(TriggerWheel::T_SECONDARY) == 0 && useOnlyPrimaryForSync) {
+			firmwareError(ERROR_TRIGGER_DRAMA, "why would you set useOnlyPrimaryForSync with only one trigger wheel?");
+		}
 	}
 
 // todo: move the following logic from below here
@@ -219,22 +218,22 @@ void TriggerWaveform::calculateExpectedEventCounts(bool useOnlyRisingEdgeForTrig
 }
 
 /**
- * Deprecated! many usages should be replaced by addEvent360
+ * See header for documentation
  */
-void TriggerWaveform::addEvent720(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state) {
-	addEvent(angle / FOUR_STROKE_CYCLE_DURATION, channelIndex, state);
+void TriggerWaveform::addEvent720(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex) {
+	addEvent(angle / FOUR_STROKE_CYCLE_DURATION, state, channelIndex);
 }
 
-void TriggerWaveform::addEvent360(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state) {
+void TriggerWaveform::addEvent360(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex) {
 	efiAssertVoid(CUSTOM_OMODE_UNDEF, operationMode == FOUR_STROKE_CAM_SENSOR || operationMode == FOUR_STROKE_CRANK_SENSOR, "Not a mode for 360");
-	addEvent(CRANK_MODE_MULTIPLIER * angle / FOUR_STROKE_CYCLE_DURATION, channelIndex, state);
+	addEvent(CRANK_MODE_MULTIPLIER * angle / FOUR_STROKE_CYCLE_DURATION, state, channelIndex);
 }
 
-void TriggerWaveform::addEventAngle(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state) {
-	addEvent(angle / getCycleDuration(), channelIndex, state);
+void TriggerWaveform::addEventAngle(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex) {
+	addEvent(angle / getCycleDuration(), state, channelIndex);
 }
 
-void TriggerWaveform::addEvent(angle_t angle, TriggerWheel const channelIndex, TriggerValue const state) {
+void TriggerWaveform::addEvent(angle_t angle, TriggerValue const state, TriggerWheel const channelIndex) {
 	efiAssertVoid(CUSTOM_OMODE_UNDEF, operationMode != OM_NONE, "operationMode not set");
 
 	if (channelIndex == TriggerWheel:: T_SECONDARY) {
@@ -257,7 +256,7 @@ void TriggerWaveform::addEvent(angle_t angle, TriggerWheel const channelIndex, T
 	// todo: the whole 'useOnlyRisingEdgeForTrigger' parameter and logic should not be here
 	// todo: see calculateExpectedEventCounts
 	// related calculation should be done once trigger is initialized outside of trigger shape scope
-	if (!useOnlyRisingEdgeForTriggerTemp || state == TriggerValue::RISE) {
+	if (!useOnlyRisingEdges || state == TriggerValue::RISE) {
 		expectedEventCount[(int)channelIndex]++;
 	}
 
@@ -331,17 +330,6 @@ angle_t TriggerWaveform::getSwitchAngle(int index) const {
 	return getCycleDuration() * wave.getSwitchTime(index);
 }
 
-void setToothedWheelConfiguration(TriggerWaveform *s, int total, int skipped,
-		operation_mode_e operationMode) {
-#if EFI_ENGINE_CONTROL
-
-	s->useRiseEdge = true;
-
-	initializeSkippedToothTriggerWaveformExt(s, total, skipped,
-			operationMode);
-#endif
-}
-
 void TriggerWaveform::setTriggerSynchronizationGap2(float syncRatioFrom, float syncRatioTo) {
 	setTriggerSynchronizationGap3(/*gapIndex*/0, syncRatioFrom, syncRatioTo);
 }
@@ -388,7 +376,7 @@ uint16_t TriggerWaveform::findAngleIndex(TriggerFormDetails *details, angle_t ta
 		}
 	} while (left <= right);
 	left -= 1;
-	if (useOnlyRisingEdgeForTriggerTemp) {
+	if (useOnlyRisingEdges) {
 		left &= ~1U;
 	}
 	return left;
@@ -396,54 +384,6 @@ uint16_t TriggerWaveform::findAngleIndex(TriggerFormDetails *details, angle_t ta
 
 void TriggerWaveform::setShapeDefinitionError(bool value) {
 	shapeDefinitionError = value;
-}
-
-void findTriggerPosition(TriggerWaveform *triggerShape,
-		TriggerFormDetails *details,
-		event_trigger_position_s *position,
-		angle_t angle) {
-	efiAssertVoid(CUSTOM_ERR_6574, !cisnan(angle), "findAngle#1");
-	assertAngleRange(angle, "findAngle#a1", CUSTOM_ERR_6545);
-
-	efiAssertVoid(CUSTOM_ERR_6575, !cisnan(triggerShape->tdcPosition), "tdcPos#1")
-	assertAngleRange(triggerShape->tdcPosition, "tdcPos#a1", CUSTOM_UNEXPECTED_TDC_ANGLE);
-
-	efiAssertVoid(CUSTOM_ERR_6576, !cisnan(engineConfiguration->globalTriggerAngleOffset), "tdcPos#2")
-	assertAngleRange(engineConfiguration->globalTriggerAngleOffset, "tdcPos#a2", CUSTOM_INVALID_GLOBAL_OFFSET);
-
-	// convert engine cycle angle into trigger cycle angle
-	angle += triggerShape->tdcPosition + engineConfiguration->globalTriggerAngleOffset;
-	efiAssertVoid(CUSTOM_ERR_6577, !cisnan(angle), "findAngle#2");
-	wrapAngle2(angle, "addFuel#2", CUSTOM_ERR_6555, getEngineCycle(triggerShape->getWheelOperationMode()));
-
-	int triggerEventIndex = triggerShape->findAngleIndex(details, angle);
-	angle_t triggerEventAngle = details->eventAngles[triggerEventIndex];
-	angle_t offsetFromTriggerEvent = angle - triggerEventAngle;
-
-	// Guarantee that we aren't going to try and schedule an event prior to the tooth
-	if (offsetFromTriggerEvent < 0) {
-		warning(CUSTOM_OBD_ANGLE_CONSTRAINT_VIOLATION, "angle constraint violation in findTriggerPosition(): %.2f/%.2f", angle, triggerEventAngle);
-		return;
-	}
-
-	{
-		// This must happen under lock so that the tooth and offset don't get partially read and mismatched
-		chibios_rt::CriticalSectionLocker csl;
-
-		position->triggerEventIndex = triggerEventIndex;
-		position->angleOffsetFromTriggerEvent = offsetFromTriggerEvent;
-	}
-}
-
-void TriggerWaveform::prepareShape(TriggerFormDetails& details) {
-#if EFI_ENGINE_CONTROL && EFI_SHAFT_POSITION_INPUT
-	if (shapeDefinitionError) {
-		// Nothing to do here if there's a problem with the trigger shape
-		return;
-	}
-
-	details.prepareEventAngles(this);
-#endif
 }
 
 void TriggerWaveform::setTriggerSynchronizationGap(float syncRatio) {
@@ -474,18 +414,10 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 
 	shapeDefinitionError = false;
 
-	bool useOnlyRisingEdgeForTrigger = triggerConfig.UseOnlyRisingEdgeForTrigger;
-	this->useOnlyRisingEdgeForTriggerTemp = useOnlyRisingEdgeForTrigger;
-
 	switch (triggerConfig.TriggerType.type) {
-
 	case TT_TOOTHED_WHEEL:
-		/**
-		 * huh? why all know skipped wheel shapes use 'setToothedWheelConfiguration' method
-		 * which touches 'useRiseEdge' flag while here we do not touch it?!
-		 */
-		initializeSkippedToothTriggerWaveformExt(this, triggerConfig.TriggerType.customTotalToothCount,
-				triggerConfig.TriggerType.customSkippedToothCount, triggerOperationMode);
+		initializeSkippedToothTrigger(this, triggerConfig.TriggerType.customTotalToothCount,
+				triggerConfig.TriggerType.customSkippedToothCount, triggerOperationMode, SyncEdge::RiseOnly);
 		break;
 
 	case TT_MAZDA_MIATA_NA:
@@ -622,7 +554,7 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 		break;
 
 	case TT_ONE:
-		setToothedWheelConfiguration(this, 1, 0, triggerOperationMode);
+		initializeSkippedToothTrigger(this, 1, 0, triggerOperationMode, SyncEdge::Rise);
 		break;
 
 	case TT_MAZDA_SOHC_4:
@@ -634,7 +566,7 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 		break;
 
 	case TT_VVT_JZ:
-		setToothedWheelConfiguration(this, 3, 0, triggerOperationMode);
+		initializeSkippedToothTrigger(this, 3, 0, triggerOperationMode, SyncEdge::RiseOnly);
 		break;
 
 	case TT_36_2_1_1:
@@ -646,7 +578,7 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 	    break;
 
 	case TT_TOOTHED_WHEEL_32_2:
-		setToothedWheelConfiguration(this, 32, 2, triggerOperationMode);
+		initializeSkippedToothTrigger(this, 32, 2, triggerOperationMode, SyncEdge::RiseOnly);
 		// todo: why is this 32/2 asking for third gap while 60/2 is happy with just two gaps?
 		// method above sets second gap, here we add third
 		// this third gap is not required to sync on perfect signal but is needed to handle to reject cranking transition noise
@@ -654,11 +586,11 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 		break;
 
 	case TT_TOOTHED_WHEEL_60_2:
-		setToothedWheelConfiguration(this, 60, 2, triggerOperationMode);
+		initializeSkippedToothTrigger(this, 60, 2, triggerOperationMode, SyncEdge::RiseOnly);
 		break;
 
 	case TT_TOOTHED_WHEEL_36_2:
-		setToothedWheelConfiguration(this, 36, 2, triggerOperationMode);
+		initializeSkippedToothTrigger(this, 36, 2, triggerOperationMode, SyncEdge::RiseOnly);
 		setTriggerSynchronizationGap3(/*gapIndex*/0, /*from*/1.6, 3.5);
 		setTriggerSynchronizationGap3(/*gapIndex*/1, /*from*/0.7, 1.3); // second gap is not required to synch on perfect signal but is needed to handle to reject cranking transition noise
 		break;
@@ -668,7 +600,7 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 		break;
 
 	case TT_TOOTHED_WHEEL_36_1:
-		setToothedWheelConfiguration(this, 36, 1, triggerOperationMode);
+		initializeSkippedToothTrigger(this, 36, 1, triggerOperationMode, SyncEdge::RiseOnly);
 		break;
 
 	case TT_VVT_BOSCH_QUICK_START:
@@ -679,11 +611,11 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 		configureBarra3plus1cam(this);
 		break;
 
-	case TT_HONDA_K_4_1:
+	case TT_HONDA_K_CAM_4_1:
 		configureHondaK_4_1(this);
 		break;
 
-	case TT_HONDA_K_12_1:
+	case TT_HONDA_K_CRANK_12_1:
 		configureHondaK_12_1(this);
 		break;
 
@@ -695,7 +627,11 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 	    initializeMazdaSkyactivCam(this);
         break;
 
-	case UNUSED_21:
+	case TT_BENELLI_TRE:
+	    configureBenelli(this);
+        break;
+
+	case UNUSED_29:
 	case UNUSED_34:
 	case TT_1_16:
 		configureOnePlus16(this);
@@ -735,10 +671,6 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 
 	case TT_2JZ_3_34:
 		initialize2jzGE3_34_simulation_shape(this);
-		break;
-
-	case TT_2JZ_1_12:
-		initialize2jzGE1_12(this);
 		break;
 
 	case TT_12_TOOTH_CRANK:
@@ -789,22 +721,15 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e triggerOperatio
 		setShapeDefinitionError(true);
 		warning(CUSTOM_ERR_NO_SHAPE, "initializeTriggerWaveform() not implemented: %d", triggerConfig.TriggerType.type);
 	}
+
 	/**
 	 * Feb 2019 suggestion: it would be an improvement to remove 'expectedEventCount' logic from 'addEvent'
 	 * and move it here, after all events were added.
 	 */
-	calculateExpectedEventCounts(useOnlyRisingEdgeForTrigger);
+	calculateExpectedEventCounts();
 	version++;
 
 	if (!shapeDefinitionError) {
 		wave.checkSwitchTimes(getCycleDuration());
-	}
-
-	if (bothFrontsRequired && useOnlyRisingEdgeForTrigger) {
-#if EFI_PROD_CODE || EFI_SIMULATOR
-		firmwareError(CUSTOM_ERR_BOTH_FRONTS_REQUIRED, "trigger: both fronts required");
-#else
-		warning(CUSTOM_ERR_BOTH_FRONTS_REQUIRED, "trigger: both fronts required");
-#endif
 	}
 }

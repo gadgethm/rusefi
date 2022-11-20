@@ -56,7 +56,6 @@ public enum Sensor implements BinaryLogEntry {
 //    // fuel math
 //    CHARGE_AIR_MASS("airmass", SensorCategory.OPERATIONS, FieldType.UINT16, 44, 0.001, 0, 3, "g/cyl"),
 //    crankingFuel(GAUGE_NAME_FUEL_CRANKING, SensorCategory.FUEL, FieldType.UINT16, 46, 1.0 / PACK_MULT_MS, 0, 30, "ms"),
-    TARGET_AFR(GAUGE_NAME_TARGET_AFR, SensorCategory.OPERATIONS, FieldType.INT16, TsOutputs.CURRENTTARGETAFR, 1.0 / PACK_MULT_AFR, 10, 20, "afr"),
     baseFuel(Fields.GAUGE_NAME_FUEL_BASE, SensorCategory.FUEL, FieldType.UINT16, TsOutputs.BASEFUEL, 1.0 / PACK_MULT_MS, 0, 30, "ms"),
     runningFuel(GAUGE_NAME_FUEL_RUNNING, SensorCategory.FUEL, FieldType.UINT16, TsOutputs.FUELRUNNING, 1.0 / PACK_MULT_FUEL_MASS, 0, 15, "ms"),
 //    actualLastInjection(GAUGE_NAME_FUEL_LAST_INJECTION, SensorCategory.FUEL, FieldType.UINT16, 54, 1.0 / PACK_MULT_MS, 0, 30, "ms"),
@@ -166,6 +165,9 @@ public enum Sensor implements BinaryLogEntry {
 //    etb_idlePosition("ETB idlePosition", SensorCategory.SENSOR_INPUTS, FieldType.INT, 988, 1.0, -1.0, -1.0, ""),
 //    trim("trim", SensorCategory.SENSOR_INPUTS, FieldType.INT, 992, 1.0, -1.0, -1.0, ""),
 //    luaAdjustment("luaAdjustment", SensorCategory.SENSOR_INPUTS, FieldType.INT, 996, 1.0, -1.0, -1.0, ""),
+
+    LUAGAUGE1("Lua gauge 1", SensorCategory.SENSOR_INPUTS, FieldType.FLOAT, TsOutputs.LUAGAUGES1, 1, 4, 18000, "value"),
+    LUAGAUGE2("Lua gauge 2", SensorCategory.SENSOR_INPUTS, FieldType.FLOAT, TsOutputs.LUAGAUGES2, 1, 4, 18000, "value"),
 
     // Synthetic (console only) channels
     ETB_CONTROL_QUALITY("ETB metric", SensorCategory.SNIFFING, "", 100),

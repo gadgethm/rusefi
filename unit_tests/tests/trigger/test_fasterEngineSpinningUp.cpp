@@ -78,7 +78,7 @@ TEST(cranking, testFasterEngineSpinningUp) {
 	eth.assertEvent5("inj end#2", 1, (void*)endSimultaneousInjection, 149999);
 
 	// Now perform a fake VVT sync and check that ignition mode changes to sequential
-	engine->triggerCentral.triggerState.syncEnginePhase(1, 0, 720);
+	engine->triggerCentral.syncAndReport(1, 0);
 	ASSERT_EQ(IM_SEQUENTIAL, getCurrentIgnitionMode());
 
 	// skip, clear & advance 1 more revolution at higher RPM
@@ -114,9 +114,13 @@ static void doTestFasterEngineSpinningUp60_2(int startUpDelayMs, int rpm1, int e
 	eth.fireTriggerEvents2(30 /* count */, 1 /*ms*/);
 	// now fire missed tooth rise/fall
 	eth.fireRise(5 /*ms*/);
-	EXPECT_EQ(rpm1, round(Sensor::getOrZero(SensorType::Rpm))) << "test RPM: After rise " << std::to_string(startUpDelayMs);
-	eth.fireFall(1 /*ms*/);
-	EXPECT_EQ(expectedRpm, round(Sensor::getOrZero(SensorType::Rpm))) << "test RPM: with " << std::to_string(startUpDelayMs) << " startUpDelayMs";
+	EXPECT_EQ(rpm1, round(Sensor::getOrZero(SensorType::Rpm)));
+
+	eth.fireFall(1);
+	eth.fireTriggerEvents2(30, 1);
+
+	// After some more regular teeth, instant RPM is still correct
+	EXPECT_EQ(rpm1, round(Sensor::getOrZero(SensorType::Rpm)));
 }
 
 TEST(cranking, testFasterEngineSpinningUp60_2) {

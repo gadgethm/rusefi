@@ -11,8 +11,8 @@
  */
 
 #include "pch.h"
-#include "custom_engine.h"
 #include "hellen_meta.h"
+#include "defaults.h"
 
 static void setInjectorPins() {
 	engineConfiguration->injectionPins[0] = H144_LS_1;
@@ -70,8 +70,7 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->tps1_1AdcChannel = H144_IN_TPS;
 	engineConfiguration->tps1_2AdcChannel = H144_IN_AUX1;
 
-	engineConfiguration->throttlePedalPositionAdcChannel = EFI_ADC_3;
-	engineConfiguration->throttlePedalPositionSecondAdcChannel = EFI_ADC_14;
+	setPPSInputs(EFI_ADC_3, EFI_ADC_14);
 	engineConfiguration->mafAdcChannel = EFI_ADC_10;
 	engineConfiguration->map.sensor.hwChannel = EFI_ADC_11;
 
@@ -80,9 +79,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->clt.adcChannel = H144_IN_CLT;
 
 	engineConfiguration->iat.adcChannel = H144_IN_IAT;
-
-	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
-	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
 }
 
 void setBoardConfigOverrides() {
@@ -118,8 +114,7 @@ void setBoardDefaultConfiguration() {
 	engineConfiguration->enableSoftwareKnock = true;
 	engineConfiguration->canNbcType = CAN_BUS_NISSAN_VQ;
 
-	engineConfiguration->canTxPin = Gpio::D1;
-	engineConfiguration->canRxPin = Gpio::D0;
+	setHellenCan();
 
 	engineConfiguration->fuelPumpPin = Gpio::D12;	// OUT_IO9 // 113 Fuel Pump Relay
 	engineConfiguration->idle.solenoidPin = H144_OUT_PWM5;
@@ -134,15 +129,13 @@ void setBoardDefaultConfiguration() {
 	// Some sensible defaults for other options
 	setCrankOperationMode();
 
-	engineConfiguration->vvtCamSensorUseRise = true;
-	engineConfiguration->useOnlyRisingEdgeForTrigger = true;
 	setAlgorithm(LM_SPEED_DENSITY);
 
 
 	// Bosch VQ40 VR56 VK56 0280158007
 	engineConfiguration->injector.flow = 296.2;
 
-	strcpy(engineConfiguration->engineMake, ENGINE_MAKE_NISSAN);
+	strcpy(engineConfiguration->engineMake, ENGINE_MAKE_BMW);
 
 	engineConfiguration->ignitionMode = IM_INDIVIDUAL_COILS; // IM_WASTED_SPARK
 	engineConfiguration->crankingInjectionMode = IM_SIMULTANEOUS;

@@ -53,43 +53,14 @@
 
 #include "backup_ram.h"
 
-void startSimultaneousInjection(void*) {
-	efitick_t nowNt = getTimeNowNt();
-	for (size_t i = 0; i < engineConfiguration->specs.cylindersCount; i++) {
-		enginePins.injectors[i].open(nowNt);
-	}
-}
-
-void endSimultaneousInjectionOnlyTogglePins() {
-	efitick_t nowNt = getTimeNowNt();
-	for (size_t i = 0; i < engineConfiguration->specs.cylindersCount; i++) {
-		enginePins.injectors[i].close(nowNt);
-	}
-}
-
 void endSimultaneousInjection(InjectionEvent *event) {
 	event->isScheduled = false;
 	endSimultaneousInjectionOnlyTogglePins();
-	engine->injectionEvents.addFuelEventsForCylinder(event->ownIndex);
+	getFuelSchedule()->addFuelEventsForCylinder(event->ownIndex);
 }
-
-void turnInjectionPinHigh(InjectionEvent *event) {
-	efitick_t nowNt = getTimeNowNt();
-	for (int i = 0;i < MAX_WIRES_COUNT;i++) {
-		InjectorOutputPin *output = event->outputs[i];
-
-		if (output) {
-			output->open(nowNt);
-		}
-	}
-}
-
 
 void turnInjectionPinLow(InjectionEvent *event) {
 	efitick_t nowNt = getTimeNowNt();
-
-	engine->outputChannels.mostRecentTimeBetweenIgnitionEvents = nowNt - engine->mostRecentIgnitionEvent;
-	engine->mostRecentIgnitionEvent = nowNt;
 
 	event->isScheduled = false;
 	for (int i = 0;i<MAX_WIRES_COUNT;i++) {
@@ -98,26 +69,7 @@ void turnInjectionPinLow(InjectionEvent *event) {
 			output->close(nowNt);
 		}
 	}
-	engine->injectionEvents.addFuelEventsForCylinder(event->ownIndex);
-}
-
-static bool isPhaseInRange(float test, float current, float next) {
-	bool afterCurrent = test >= current;
-	bool beforeNext = test < next;
-
-	if (next > current) {
-		// we're not near the end of the cycle, comparison is simple
-		// 0            |------------------------|       720
-		//            next                    current
-		return afterCurrent && beforeNext;
-	} else {
-		// we're near the end of the cycle so we have to check the wraparound
-		// 0 -----------|                        |------ 720
-		//            next                    current
-		// Check whether test is after current (ie, between current tooth and end of cycle)
-		// or if test if before next (ie, between start of cycle and next tooth)
-		return afterCurrent || beforeNext;
-	}
+	getFuelSchedule()->addFuelEventsForCylinder(event->ownIndex);
 }
 
 void InjectionEvent::onTriggerTooth(int rpm, efitick_t nowNt, float currentPhase, float nextPhase) {
@@ -228,12 +180,12 @@ void InjectionEvent::onTriggerTooth(int rpm, efitick_t nowNt, float currentPhase
 
 	float angleFromNow = eventAngle - currentPhase;
 	if (angleFromNow < 0) {
-		angleFromNow += engine->engineState.engineCycle;
+		angleFromNow += getEngineState()->engineCycle;
 	}
 
 	efitick_t startTime = scheduleByAngle(&signalTimerUp, nowNt, angleFromNow, startAction);
 	efitick_t turnOffTime = startTime + US2NT((int)durationUs);
-	engine->executor.scheduleByTimestampNt("inj", &endOfInjectionEvent, turnOffTime, endAction);
+	getExecutorInterface()->scheduleByTimestampNt("inj", &endOfInjectionEvent, turnOffTime, endAction);
 
 #if EFI_UNIT_TEST
 		printf("scheduling injection angle=%.2f/delay=%.2f injectionDuration=%.2f\r\n", angleFromNow, NT2US(startTime - nowNt), injectionDuration);
@@ -252,13 +204,11 @@ static void handleFuel(uint32_t trgEventIndex, int rpm, efitick_t nowNt, float c
 	ScopePerf perf(PE::HandleFuel);
 	
 	efiAssertVoid(CUSTOM_STACK_6627, getCurrentRemainingStack() > 128, "lowstck#3");
-	efiAssertVoid(CUSTOM_ERR_6628, trgEventIndex < engine->engineCycleEventCount, "handleFuel/event index");
+	efiAssertVoid(CUSTOM_ERR_6628, trgEventIndex < getTriggerCentral()->engineCycleEventCount, "handleFuel/event index");
 
-	if (trgEventIndex == 0) {
-		engine->tpsAccelEnrichment.onEngineCycleTps();
-	}
+	LimpState limitedFuelState = getLimpManager()->allowInjection();
 
-	LimpState limitedFuelState = engine->limpManager.allowInjection();
+	// todo: eliminate state copy logic by giving limpManager it's owm limp_manager.txt and leveraging LiveData
 	engine->outputChannels.fuelCutReason = (int8_t)limitedFuelState.reason;
 	bool limitedFuel = !limitedFuelState.value;
 	if (limitedFuel) {
@@ -269,7 +219,7 @@ static void handleFuel(uint32_t trgEventIndex, int rpm, efitick_t nowNt, float c
 	 * Injection events are defined by addFuelEvents() according to selected
 	 * fueling strategy
 	 */
-	FuelSchedule *fs = &engine->injectionEvents;
+	FuelSchedule *fs = getFuelSchedule();
 	if (!fs->isReady) {
 		fs->addFuelEvents();
 	}
@@ -317,9 +267,9 @@ void mainTriggerCallback(uint32_t trgEventIndex, efitick_t edgeTimestamp, angle_
 	
 	if (trgEventIndex == 0) {
 
-		if (engine->triggerCentral.checkIfTriggerConfigChanged()) {
-			engine->ignitionEvents.isReady = false; // we need to rebuild complete ignition schedule
-			engine->injectionEvents.isReady = false;
+		if (getTriggerCentral()->checkIfTriggerConfigChanged()) {
+			getIgnitionEvents()->isReady = false; // we need to rebuild complete ignition schedule
+			getFuelSchedule()->isReady = false;
 			// moved 'triggerIndexByAngle' into trigger initialization (why was it invoked from here if it's only about trigger shape & optimization?)
 			// see updateTriggerWaveform() -> prepareOutputSignals()
 
@@ -335,12 +285,12 @@ void mainTriggerCallback(uint32_t trgEventIndex, efitick_t edgeTimestamp, angle_
 	handleFuel(trgEventIndex, rpm, edgeTimestamp, currentPhase, nextPhase);
 
 	engine->module<TriggerScheduler>()->scheduleEventsUntilNextTriggerTooth(
-		rpm, trgEventIndex, edgeTimestamp);
+		rpm, trgEventIndex, edgeTimestamp, currentPhase, nextPhase);
 
 	/**
 	 * For spark we schedule both start of coil charge and actual spark based on trigger angle
 	 */
-	onTriggerEventSparkLogic(trgEventIndex, rpm, edgeTimestamp);
+	onTriggerEventSparkLogic(trgEventIndex, rpm, edgeTimestamp, currentPhase, nextPhase);
 }
 
 #endif /* EFI_ENGINE_CONTROL */

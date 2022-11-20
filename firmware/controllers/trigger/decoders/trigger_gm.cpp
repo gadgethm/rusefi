@@ -10,9 +10,9 @@
 #include "trigger_gm.h"
 
 static float addTooth(float offset, TriggerWaveform *s) {
-	s->addEventAngle(offset, TriggerWheel::T_SECONDARY, TriggerValue::RISE);
+	s->addEventAngle(offset, TriggerValue::RISE, TriggerWheel::T_SECONDARY);
 	offset += CRANK_MODE_MULTIPLIER * 3;
-	s->addEventAngle(offset, TriggerWheel::T_SECONDARY, TriggerValue::FALL);
+	s->addEventAngle(offset, TriggerValue::FALL, TriggerWheel::T_SECONDARY);
 	offset += CRANK_MODE_MULTIPLIER * 3;
 	return offset;
 }
@@ -22,7 +22,7 @@ static float addTooth(float offset, TriggerWaveform *s) {
  * GM/Daewoo Distributor on the F8CV
  */
 void configureGm60_2_2_2(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::RiseOnly);
 	s->isSynchronizationNeeded = false;
 	s->isSecondWheelCam = true;
 
@@ -52,39 +52,39 @@ void configureGm60_2_2_2(TriggerWaveform *s) {
 	}
 
 
-	s->addEventAngle(m * (360 - 6), TriggerWheel::T_PRIMARY, TriggerValue::RISE);
+	s->addEventAngle(m * (360 - 6), TriggerValue::RISE);
 
 	offset = addTooth(offset, s);
 
-	s->addEventAngle(m * (360), TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEventAngle(m * (360), TriggerValue::FALL);
 
 }
 
 void configureGmTriggerWaveform(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_CRANK_SENSOR);
+	s->initialize(FOUR_STROKE_CRANK_SENSOR, SyncEdge::RiseOnly);
 
 	float w = 5;
 
-	s->addEvent360(60 - w, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(60, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(60 - w, TriggerValue::RISE);
+	s->addEvent360(60, TriggerValue::FALL);
 
-	s->addEvent360(120 - w, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(120.0, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(120 - w, TriggerValue::RISE);
+	s->addEvent360(120.0, TriggerValue::FALL);
 
-	s->addEvent360(180 - w, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(180, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(180 - w, TriggerValue::RISE);
+	s->addEvent360(180, TriggerValue::FALL);
 
-	s->addEvent360(240 - w, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(240.0, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(240 - w, TriggerValue::RISE);
+	s->addEvent360(240.0, TriggerValue::FALL);
 
-	s->addEvent360(300 - w, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(300.0, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(300 - w, TriggerValue::RISE);
+	s->addEvent360(300.0, TriggerValue::FALL);
 
-	s->addEvent360(350 - w, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(350.0, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(350 - w, TriggerValue::RISE);
+	s->addEvent360(350.0, TriggerValue::FALL);
 
-	s->addEvent360(360 - w, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(360.0, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(360 - w, TriggerValue::RISE);
+	s->addEvent360(360.0, TriggerValue::FALL);
 
 	s->setTriggerSynchronizationGap(6);
 }
@@ -94,8 +94,8 @@ static int gm_tooth_pair(float startAngle, bool isShortLong, TriggerWaveform* s,
 	int window = (isShortLong ? shortToothWidth : (15 - shortToothWidth)) * mult;
 	int end = startAngle + mult * 15;
 
-	s->addEvent720(startAngle + window, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent720(end, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent720(startAngle + window, TriggerValue::RISE);
+	s->addEvent720(end, TriggerValue::FALL);
 
 	return end;
 }
@@ -110,7 +110,7 @@ static int gm_tooth_pair(float startAngle, bool isShortLong, TriggerWaveform* s,
  * based on data in https://rusefi.com/forum/viewtopic.php?f=3&t=936&p=30303#p30285
  */
 static void initGmLS24(TriggerWaveform *s, float shortToothWidth) {
-	s->initialize(FOUR_STROKE_CRANK_SENSOR);
+	s->initialize(FOUR_STROKE_CRANK_SENSOR, SyncEdge::Rise);
 
 	/* 
 	 * Okay, here's how this magic works:
@@ -151,8 +151,6 @@ static void initGmLS24(TriggerWaveform *s, float shortToothWidth) {
 
 		angle = gm_tooth_pair(angle, bit, s, CRANK_MODE_MULTIPLIER, shortToothWidth);
 	}
-
-	s->useOnlyPrimaryForSync = true;
 }
 
 // TT_GM_24x

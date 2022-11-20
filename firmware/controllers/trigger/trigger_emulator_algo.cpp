@@ -46,9 +46,12 @@ void TriggerEmulatorHelper::handleEmulatorCallback(const MultiChannelStateSequen
 #if EFI_SHAFT_POSITION_INPUT
 	for (size_t i = 0; i < PWM_PHASE_MAX_WAVE_PER_PWM; i++) {
 		if (needEvent(stateIndex, multiChannelStateSequence, i)) {
-			pin_state_t currentValue = multiChannelStateSequence.getChannelState(/*phaseIndex*/i, stateIndex);
+			bool isRise = TriggerValue::RISE == multiChannelStateSequence.getChannelState(/*phaseIndex*/i, stateIndex);
 
-			handleShaftSignal(i, currentValue == TriggerValue::RISE, stamp);
+			isRise ^= (i == 0 && engineConfiguration->invertPrimaryTriggerSignal);
+			isRise ^= (i == 1 && engineConfiguration->invertSecondaryTriggerSignal);
+
+			handleShaftSignal(i, isRise, stamp);
 		}
 	}
 #endif // EFI_SHAFT_POSITION_INPUT
@@ -57,11 +60,6 @@ void TriggerEmulatorHelper::handleEmulatorCallback(const MultiChannelStateSequen
 PwmConfig triggerSignal;
 
 static int atTriggerVersion = 0;
-
-#if EFI_ENGINE_SNIFFER
-#include "engine_sniffer.h"
-extern WaveChart waveChart;
-#endif /* EFI_ENGINE_SNIFFER */
 
 /**
  * todo: why is this method NOT reciprocal to getCrankDivider?!
@@ -93,7 +91,7 @@ void setTriggerEmulatorRPM(int rpm) {
 	if (rpm == 0) {
 		triggerSignal.setFrequency(NAN);
 	} else {
-		float rpmM = getRpmMultiplier(engine->getOperationMode());
+		float rpmM = getRpmMultiplier(getEngineRotationState()->getOperationMode());
 		float rPerSecond = rpm * rpmM / 60.0; // per minute converted to per second
 		triggerSignal.setFrequency(rPerSecond);
 	}
@@ -123,7 +121,7 @@ static bool hasInitTriggerEmulator = false;
 # if !EFI_UNIT_TEST
 
 static void emulatorApplyPinState(int stateIndex, PwmConfig *state) /* pwm_gen_callback */ {
-	if (engine->directSelfStimulation) {
+	if (engine->triggerCentral.directSelfStimulation) {
 		/**
 		 * this callback would invoke the input signal handlers directly
 		 */
@@ -140,7 +138,7 @@ static void emulatorApplyPinState(int stateIndex, PwmConfig *state) /* pwm_gen_c
 #endif /* EFI_PROD_CODE */
 }
 
-static void initTriggerPwm() {
+static void startSimulatedTriggerSignal() {
 	// No need to start more than once
 	if (hasInitTriggerEmulator) {
 		return;
@@ -157,19 +155,23 @@ static void initTriggerPwm() {
 }
 
 void enableTriggerStimulator() {
-	initTriggerPwm();
-	engine->directSelfStimulation = true;
+	startSimulatedTriggerSignal();
+	engine->triggerCentral.directSelfStimulation = true;
+    engine->rpmCalculator.Register();
+    incrementGlobalConfigurationVersion();
 }
 
 void enableExternalTriggerStimulator() {
-	initTriggerPwm();
-	engine->directSelfStimulation = false;
+	startSimulatedTriggerSignal();
+	engine->triggerCentral.directSelfStimulation = false;
+    incrementGlobalConfigurationVersion();
 }
 
 void disableTriggerStimulator() {
-	engine->directSelfStimulation = false;
+	engine->triggerCentral.directSelfStimulation = false;
 	triggerSignal.stop();
 	hasInitTriggerEmulator = false;
+    incrementGlobalConfigurationVersion();
 }
 
 void initTriggerEmulatorLogic() {

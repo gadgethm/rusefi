@@ -8,6 +8,9 @@
 #pragma once
 
 #include <stdint.h>
+#ifdef __cplusplus
+#include <rusefi/arrays.h>
+#endif
 
 #define _MAX_FILLER 11
 
@@ -26,9 +29,6 @@ static inline uint32_t SWAP_UINT32(uint32_t x)
 
 #define BIT(n) (UINT32_C(1) << (n))
 
-// we also have efi::size which probably does not work for C code
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-
 #define HUMAN_OFFSET 1
 
 // human-readable IDs start from 1 while computer-readable indices start from 0
@@ -40,7 +40,7 @@ static inline uint32_t SWAP_UINT32(uint32_t x)
 // number of microseconds in one period of given frequency (per second)
 #define frequency2periodUs(freq) ((1000000.0f) / (freq))
 
-#define ERROR_CODE 311223344
+#define ATOI_ERROR_CODE 311223344
 
 #define Q(x) #x
 #define QUOTE(x) Q(x)
@@ -82,6 +82,8 @@ bool strEqual(const char *str1, const char *str2);
 
 // Currently used by air-interp. tCharge mode (see EngineState::updateTChargeK()).
 float limitRateOfChange(float newValue, float oldValue, float incrLimitPerSec, float decrLimitPerSec, float secsPassed);
+
+bool isPhaseInRange(float test, float current, float next);
 
 #ifdef __cplusplus
 }

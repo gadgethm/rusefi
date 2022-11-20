@@ -235,7 +235,7 @@ void firmwareError(obd_code_e code, const char *fmt, ...) {
 #if EFI_PROD_CODE
 	if (hasFirmwareErrorFlag)
 		return;
-	engine->limpManager.fatalError();
+	getLimpManager()->fatalError();
 	engine->engineState.warnings.addWarningCode(code);
 #ifdef EFI_PRINT_ERRORS_AS_WARNINGS
 	va_list ap;
@@ -271,8 +271,10 @@ void firmwareError(obd_code_e code, const char *fmt, ...) {
 	}
 
 	auto sramState = getBackupSram();
-	strncpy(sramState->ErrorString, criticalErrorMessageBuffer, efi::size(sramState->ErrorString));
-	sramState->Cookie = ErrorCookie::FirmwareError;
+	if (sramState != nullptr) {
+		strncpy(sramState->ErrorString, criticalErrorMessageBuffer, efi::size(sramState->ErrorString));
+		sramState->Cookie = ErrorCookie::FirmwareError;
+	}
 #else
 
 	char errorBuffer[200];

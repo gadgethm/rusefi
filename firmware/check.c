@@ -8,10 +8,11 @@
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
-// Firmware builds require at least GCC 9.3.1
-#if (GCC_VERSION < 931)
-	#pragma message("GCC is " STR(__GNUC__)"."STR(__GNUC_MINOR__)"."STR(__GNUC_PATCHLEVEL__))
-	#error "GCC compiler >= 9.3.1 required"
+#pragma message("GCC is " STR(__GNUC__)"."STR(__GNUC_MINOR__)"."STR(__GNUC_PATCHLEVEL__))
+
+// Firmware builds require at least GCC 11.3.1
+#if (GCC_VERSION < 1131)
+	#error "GCC compiler >= 11.3.1 required"
 #endif
 
 #endif

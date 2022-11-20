@@ -11,6 +11,8 @@
 
 #define EFI_GPIO_HARDWARE TRUE
 
+#define SENT_CHANNELS_NUM 1
+
 #ifndef EFI_BOOST_CONTROL
 #define EFI_BOOST_CONTROL TRUE
 #endif
@@ -60,6 +62,10 @@
  #define EFI_ENABLE_ASSERTS TRUE
 #endif /* EFI_ENABLE_ASSERTS */
 
+#ifndef EFI_CLOCK_LOCKS
+#define EFI_CLOCK_LOCKS TRUE
+#endif
+
 //#define EFI_UART_ECHO_TEST_MODE TRUE
 
 /**
@@ -105,7 +111,9 @@
 #define EFI_CLI_SUPPORT TRUE
 #endif
 
+#ifndef EFI_RTC
 #define EFI_RTC TRUE
+#endif
 
 #ifndef EFI_ALTERNATOR_CONTROL
 #define EFI_ALTERNATOR_CONTROL TRUE
@@ -433,6 +441,10 @@
 
 #ifndef EFI_STORAGE_EXT_SNOR
 #define EFI_STORAGE_EXT_SNOR    FALSE
+#endif
+
+#ifndef EFI_SENT_SUPPORT
+#define EFI_SENT_SUPPORT        FALSE
 #endif
 
 // killing joystick for now due to Unable to change broken settings #3227

@@ -114,7 +114,7 @@ void WaveReader::onFallEvent() {
 	periodEventTimeUs = nowUs;
 }
 
-void logicAnalyzerCallback(void* arg, efitick_t stamp) {
+void logicAnalyzerCallback(void* arg, efitick_t /*stamp*/) {
 	WaveReader* instance = reinterpret_cast<WaveReader*>(arg);
 
 	bool rise = palReadLine(instance->line) == PAL_HIGH;
@@ -126,7 +126,7 @@ void logicAnalyzerCallback(void* arg, efitick_t stamp) {
 	}
 }
 
-static void initWave(int index) {
+static void initWave(size_t index) {
 	brain_pin_e brainPin = engineConfiguration->logicAnalyzerPins[index];
 
 	efiAssertVoid(CUSTOM_ERR_6655, index < efi::size(readers), "too many ICUs");
@@ -170,7 +170,7 @@ static float getSignalOnTime(int index) {
 	return reader.last_wave_high_widthUs / 1000.0f;
 }
 
-static efitime_t getWaveOffset(int index) {
+static efitimeus_t getWaveOffset(int index) {
 	return readers[index].waveOffsetUs;
 }
 
@@ -211,7 +211,7 @@ static void reportWave(Logging *logging, int index) {
 	logging->appendFloat(periodMs, 2);
 	logging->appendPrintf("%s", LOG_DELIMITER);
 
-	uint32_t offsetUs = getWaveOffset(index);
+	efitimeus_t offsetUs = getWaveOffset(index);
 	int rpm = Sensor::getOrZero(SensorType::Rpm);
 	if (rpm != 0) {
 		float oneDegreeUs = getOneDegreeTimeUs(rpm);
@@ -242,7 +242,7 @@ void initWaveAnalyzer() {
 }
 
 void startLogicAnalyzerPins() {
-	for (int index = 0; index < LOGIC_ANALYZER_CHANNEL_COUNT; index++) {
+	for (size_t index = 0; index < LOGIC_ANALYZER_CHANNEL_COUNT; index++) {
 		initWave(index);
 	}
 }
@@ -257,40 +257,32 @@ void stopLogicAnalyzerPins() {
 	}
 }
 
-static void getChannelFreqAndDuty(int index, scaled_channel<float> *duty, scaled_channel<uint32_t> *freq) {
-	float high, period;
-
-	if ((duty == nullptr) || (freq == nullptr)) {
-		return;
-	}
-
+template <typename TFreq>
+static void getChannelFreqAndDuty(int index, float& duty, TFreq& freq) {
 	if (readers[index].line == 0) {
-		*duty = 0.0;
-		*freq = 0;
+		duty = 0.0;
+		freq = 0;
 	} else {
-		high = getSignalOnTime(index);
-		period = getSignalPeriodMs(index);
+		float high = getSignalOnTime(index);
+		float period = getSignalPeriodMs(index);
 
 		if (period != 0) {
 
-			*duty = (high * 1000.0f) /(period * 10.0f);
-			*freq = (int)(1 / (period / 1000.0f));
+			duty = (high * 1000.0f) /(period * 10.0f);
+			freq = (int)(1 / (period / 1000.0f));
 		} else {		
-			*duty = 0.0;
-			*freq = 0;
+			duty = 0.0;
+			freq = 0;
 		}
 	}
-
 }
 
 void reportLogicAnalyzerToTS() {
-#if EFI_TUNER_STUDIO	
-	scaled_channel<uint32_t> tmp;
-	getChannelFreqAndDuty(0,&engine->outputChannels.debugFloatField1, &engine->outputChannels.debugIntField1);
-	getChannelFreqAndDuty(1,&engine->outputChannels.debugFloatField2, &engine->outputChannels.debugIntField2);
-	getChannelFreqAndDuty(2,&engine->outputChannels.debugFloatField3, &engine->outputChannels.debugIntField3);
-	getChannelFreqAndDuty(3,&engine->outputChannels.debugFloatField4, &tmp);
-	engine->outputChannels.debugIntField4 = (uint16_t)tmp;
+#if EFI_TUNER_STUDIO
+	getChannelFreqAndDuty(0, engine->outputChannels.debugFloatField1, engine->outputChannels.debugIntField1);
+	getChannelFreqAndDuty(1, engine->outputChannels.debugFloatField2, engine->outputChannels.debugIntField2);
+	getChannelFreqAndDuty(2, engine->outputChannels.debugFloatField3, engine->outputChannels.debugIntField3);
+	getChannelFreqAndDuty(3, engine->outputChannels.debugFloatField4, engine->outputChannels.debugIntField4);
 #endif	
 }
 

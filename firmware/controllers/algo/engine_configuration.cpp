@@ -67,6 +67,7 @@
 #include "mercedes.h"
 #include "mitsubishi.h"
 
+#include "gm_ls_4.h"
 #include "subaru.h"
 #include "test_engine.h"
 #include "sachs.h"
@@ -344,7 +345,7 @@ void setDefaultGppwmParameters() {
 	// Same config for all channels
 	for (size_t i = 0; i < efi::size(engineConfiguration->gppwm); i++) {
 		auto& cfg = engineConfiguration->gppwm[i];
-		snprintf(engineConfiguration->gpPwmNote[i], sizeof(engineConfiguration->gpPwmNote[0]), "GPPWM%d", i);
+		chsnprintf(engineConfiguration->gpPwmNote[i], sizeof(engineConfiguration->gpPwmNote[0]), "GPPWM%d", i);
 
 		cfg.pin = Gpio::Unassigned;
 		cfg.dutyIfError = 0;
@@ -826,9 +827,6 @@ void resetConfigurationExt(configuration_callback_t boardCallback, engine_type_e
 	case TEST_ISSUE_366_RISE:
 		setTestEngineIssue366rise();
 		break;
-	case TEST_ISSUE_898:
-		setIssue898();
-		break;
 #endif // EFI_UNIT_TEST
 #if HW_MICRO_RUSEFI
 	case MRE_VW_B6:
@@ -873,6 +871,9 @@ void resetConfigurationExt(configuration_callback_t boardCallback, engine_type_e
 		break;
 #endif // HW_MICRO_RUSEFI
 #if HW_PROTEUS
+	case PROTEUS_GM_LS_4:
+		setProteusGmLs4();
+		break;
 	case PROTEUS_VW_B6:
 		setProteusVwPassatB6();
 		break;
@@ -891,7 +892,7 @@ void resetConfigurationExt(configuration_callback_t boardCallback, engine_type_e
 	case MIATA_PROTEUS_TCU:
 		setMiataNB2_Proteus_TCU();
 		break;
-	case PROTEUS_HONDA_ELEMENT_2003:
+	case PROTEUS_HONDA_K:
 		setProteusHondaElement2003();
 		break;
 	case PROTEUS_HONDA_OBD2A:
@@ -1069,9 +1070,6 @@ void resetConfigurationExt(configuration_callback_t boardCallback, engine_type_e
 	case TOYOTA_2JZ_GTE_VVTi:
 		setToyota_2jz_vics();
 		break;
-	case TOYOTA_JZS147:
-		setToyota_jzs147EngineConfiguration();
-		break;
 	case TEST_33816:
 		setTest33816EngineConfiguration();
 		break;
@@ -1119,16 +1117,6 @@ void applyNonPersistentConfiguration() {
 #endif // EFI_ENGINE_CONTROL
 }
 
-#if EFI_ENGINE_CONTROL
-
-void prepareShapes() {
-	prepareOutputSignals();
-
-	engine->injectionEvents.addFuelEvents();
-}
-
-#endif
-
 void setTwoStrokeOperationMode() {
 	engineConfiguration->twoStroke = true;
 }
@@ -1160,3 +1148,6 @@ void setFrankenso0_1_joystick(engine_configuration_s *engineConfiguration) {
 // These symbols are weak so that a board_configuration.cpp file can override them
 __attribute__((weak)) void setBoardDefaultConfiguration() { }
 __attribute__((weak)) void setBoardConfigOverrides() { }
+
+__attribute__((weak)) int getBoardMetaOutputsCount() { return 0; }
+__attribute__((weak)) Gpio* getBoardMetaOutputs() { return nullptr; }

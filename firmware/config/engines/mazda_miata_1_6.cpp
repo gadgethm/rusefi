@@ -153,7 +153,6 @@ static const uint8_t mapBased16IgnitionTable[16][16] = {
 
 void miataNAcommonEngineSettings() {
 	engineConfiguration->trigger.type = TT_MAZDA_MIATA_NA;
-	engineConfiguration->useOnlyRisingEdgeForTrigger = false;
 	engineConfiguration->specs.cylindersCount = 4;
 	engineConfiguration->specs.firingOrder = FO_1_3_4_2;
 	engineConfiguration->compressionRatio = 9.1;
@@ -373,7 +372,6 @@ void setMiataNA6_MAP_MRE() {
 	engineConfiguration->idleTimingPid.dFactor = 0.0;
 	engineConfiguration->idleTimingPid.minValue = -13;
 	engineConfiguration->idleTimingPid.maxValue = 13;
-	engineConfiguration->idleTimingPidDeadZone = 10;
 
 	// EFI_ADC_3: "22 - AN temp 4"
 	engineConfiguration->acSwitch = Gpio::A3;

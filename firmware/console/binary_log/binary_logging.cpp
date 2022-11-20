@@ -8,14 +8,13 @@
 #include "binary_logging.h"
 #include "log_field.h"
 #include "buffered_writer.h"
+#include "tunerstudio.h"
 
 #define TIME_PRECISION 1000
 
 // floating number of seconds with millisecond precision
 static scaled_channel<uint32_t, TIME_PRECISION> packedTime;
 
-// todo: we are at the edge of sdLogBuffer size and at the moment we have no code to make sure buffer does not overflow
-// todo: make this logic smarter
 // The list of logged fields lives in a separate file so it can eventually be tool-generated
 #include "log_fields_generated.h"
 
@@ -28,9 +27,31 @@ static constexpr uint16_t computeFieldsRecordLength() {
 	return recLength;
 }
 
+#if EFI_FILE_LOGGING
+static uint64_t binaryLogCount = 0;
+
+extern bool main_loop_started;
+
+void writeSdLogLine(Writer& bufferedWriter) {
+	if (!main_loop_started)
+		return;
+
+	if (binaryLogCount == 0) {
+		writeFileHeader(bufferedWriter);
+	} else {
+		updateTunerStudioState();
+		writeBlock(bufferedWriter);
+	}
+
+	binaryLogCount++;
+}
+
+#endif /* EFI_FILE_LOGGING */
+
+
 static constexpr uint16_t recordLength = computeFieldsRecordLength();
 
-void writeHeader(Writer& outBuffer) {
+void writeFileHeader(Writer& outBuffer) {
 	char buffer[MLQ_HEADER_SIZE];
 	// File format: MLVLG\0
 	strncpy(buffer, "MLVLG", 6);
@@ -62,8 +83,9 @@ void writeHeader(Writer& outBuffer) {
 	buffer[19] = recordLength & 0xFF;
 
 	// Number of logger fields
-	buffer[20] = 0;
-	buffer[21] = efi::size(fields);
+	int fieldsCount = efi::size(fields);
+	buffer[20] = fieldsCount >> 8;
+	buffer[21] = fieldsCount;
 
 	outBuffer.write(buffer, MLQ_HEADER_SIZE);
 
@@ -75,7 +97,11 @@ void writeHeader(Writer& outBuffer) {
 
 static uint8_t blockRollCounter = 0;
 
-size_t writeBlock(char* buffer) {
+//static efitimeus_t prevSdCardLineTime = 0;
+
+void writeBlock(Writer& outBuffer) {
+	static char buffer[16];
+
 	// Offset 0 = Block type, standard data block in this case
 	buffer[0] = 0;
 
@@ -83,31 +109,30 @@ size_t writeBlock(char* buffer) {
 	buffer[1] = blockRollCounter++;
 
 	// Offset 2, size 2 = Timestamp at 10us resolution
-	uint16_t timestamp = getTimeNowUs() / 10;
+	efitimeus_t nowUs = getTimeNowUs();
+	uint16_t timestamp = nowUs / 10;
 	buffer[2] = timestamp >> 8;
 	buffer[3] = timestamp & 0xFF;
 
+	outBuffer.write(buffer, 4);
+
+	// todo: add a log field for SD card period
+//	prevSdCardLineTime = nowUs;
+
 	packedTime = getTimeNowMs() * 1.0 / TIME_PRECISION;
 
-	// Offset 4 = field data
-	const char* dataBlockStart = buffer + 4;
-	char* dataBlock = buffer + 4;
-	for (size_t i = 0; i < efi::size(fields); i++) {
-		size_t entrySize = fields[i].writeData(dataBlock);
-
-		// Increment pointer to next entry
-		dataBlock += entrySize;
-	}
-
-	size_t dataBlockSize = dataBlock - dataBlockStart;
-
-	// "CRC" at the end is just the sum of all bytes
 	uint8_t sum = 0;
-	for (size_t i = 0; i < dataBlockSize; i++) {
-		sum += dataBlockStart[i];
-	}
-	*dataBlock = sum;
+	for (size_t fieldIndex = 0; fieldIndex < efi::size(fields); fieldIndex++) {
+		size_t entrySize = fields[fieldIndex].writeData(buffer);
 
-	// Total size has 4 byte header + 1 byte checksum
-	return dataBlockSize + 5;
+		for (size_t byteIndex = 0; byteIndex < entrySize; byteIndex++) {
+			// "CRC" at the end is just the sum of all bytes
+			sum += buffer[byteIndex];
+		}
+		outBuffer.write(buffer, entrySize);
+	}
+
+	buffer[0] = sum;
+	// 1 byte checksum footer
+	outBuffer.write(buffer, 1);
 }

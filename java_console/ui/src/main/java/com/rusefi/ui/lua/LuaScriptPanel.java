@@ -7,7 +7,7 @@ import com.rusefi.io.ConnectionStatusLogic;
 import com.rusefi.io.LinkManager;
 import com.rusefi.ui.MessagesPanel;
 import com.rusefi.ui.UIContext;
-import com.rusefi.ui.storage.Node;
+import com.rusefi.core.preferences.storage.Node;
 import com.rusefi.ui.util.URLLabel;
 import com.rusefi.ui.widgets.AnyCommand;
 import neoe.formatter.lua.LuaFormatter;
@@ -131,7 +131,7 @@ public class LuaScriptPanel {
             scriptText.setText("No configuration image");
             return;
         }
-        ByteBuffer luaScriptBuffer = image.getByteBuffer(Fields.luaScript_offset, Fields.LUA_SCRIPT_SIZE);
+        ByteBuffer luaScriptBuffer = image.getByteBuffer(Fields.LUASCRIPT.getOffset(), Fields.LUA_SCRIPT_SIZE);
 
         byte[] scriptArr = new byte[Fields.LUA_SCRIPT_SIZE];
         luaScriptBuffer.get(scriptArr);
@@ -166,7 +166,7 @@ public class LuaScriptPanel {
                 remaining = paddedScript.length - idx;
                 int thisWrite = Math.min(remaining, Fields.BLOCKING_FACTOR);
 
-                bp.writeData(paddedScript, idx, Fields.luaScript_offset + idx, thisWrite);
+                bp.writeData(paddedScript, idx, Fields.LUASCRIPT.getOffset() + idx, thisWrite);
 
                 idx += thisWrite;
 

@@ -14,7 +14,7 @@
  * https://en.wikipedia.org/wiki/Rover_K-series_engine
  */
 void initializeRoverK(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_CRANK_SENSOR);
+	s->initialize(FOUR_STROKE_CRANK_SENSOR, SyncEdge::RiseOnly);
 
 	float tooth = 20;
 
@@ -26,32 +26,32 @@ void initializeRoverK(TriggerWaveform *s) {
 	float base = 0;
 
 	for (int i = 0; i < 2; i++) {
-		s->addEvent720(base + tooth / 2, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-		s->addEvent720(base + tooth, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+		s->addEvent720(base + tooth / 2, TriggerValue::RISE);
+		s->addEvent720(base + tooth, TriggerValue::FALL);
 		base += tooth;
 	}
 	base += tooth;
 	for (int i = 0; i < 2; i++) {
-		s->addEvent720(base + tooth / 2, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-		s->addEvent720(base + tooth, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+		s->addEvent720(base + tooth / 2, TriggerValue::RISE);
+		s->addEvent720(base + tooth, TriggerValue::FALL);
 		base += tooth;
 	}
 	base += tooth;
 	for (int i = 0; i < 14; i++) {
-		s->addEvent720(base + tooth / 2, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-		s->addEvent720(base + tooth, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+		s->addEvent720(base + tooth / 2, TriggerValue::RISE);
+		s->addEvent720(base + tooth, TriggerValue::FALL);
 		base += tooth;
 	}
 	base += tooth;
 	for (int i = 0; i < 3; i++) {
-		s->addEvent720(base + tooth / 2, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-		s->addEvent720(base + tooth, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+		s->addEvent720(base + tooth / 2, TriggerValue::RISE);
+		s->addEvent720(base + tooth, TriggerValue::FALL);
 		base += tooth;
 	}
 	base += tooth;
 	for (int i = 0; i < 11; i++) {
-		s->addEvent720(base + tooth / 2, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-		s->addEvent720(base + tooth, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+		s->addEvent720(base + tooth / 2, TriggerValue::RISE);
+		s->addEvent720(base + tooth, TriggerValue::FALL);
 		base += tooth;
 	}
 

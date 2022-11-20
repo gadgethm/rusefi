@@ -12,6 +12,7 @@
 
 #include "subaru.h"
 #include "custom_engine.h"
+#include "defaults.h"
 
 void setSubaru2003Wrx() {
 	setFrankenso_01_LCD(engineConfiguration);
@@ -30,7 +31,6 @@ void setSubaru2003Wrx() {
 
 	engineConfiguration->triggerSimulatorPins[0] = Gpio::Unassigned; // we want to avoid PD1 conflict
 	engineConfiguration->triggerSimulatorPins[1] = Gpio::Unassigned;
-	engineConfiguration->triggerSimulatorPins[2] = Gpio::Unassigned;
 }
 
 /**
@@ -69,9 +69,9 @@ void setSubaruEG33Defaults() {
 	setCamOperationMode();
 
 	engineConfiguration->trigger.type = TT_SUBARU_SVX;
-	engineConfiguration->useOnlyRisingEdgeForTrigger = true;
 
 	engineConfiguration->specs.cylindersCount = 6;
+	setLeftRightBanksNeedBetterName();
 	engineConfiguration->specs.firingOrder = FO_1_6_3_2_5_4;
 
 	engineConfiguration->ignitionMode = IM_INDIVIDUAL_COILS;

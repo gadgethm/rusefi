@@ -10,9 +10,8 @@
 
 TEST(realCrankingNB2, normalCranking) {
 	CsvReader reader(1, /* vvtCount */ 1);
-	int indeces[] = {0};
 
-	reader.open("tests/trigger/resources/nb2-cranking-good.csv", indeces);
+	reader.open("tests/trigger/resources/nb2-cranking-good.csv");
 	EngineTestHelper eth (HELLEN_NB2);
 	engineConfiguration->alwaysInstantRpm = true;
 
@@ -31,15 +30,14 @@ TEST(realCrankingNB2, normalCranking) {
 
 	EXPECT_EQ(3, eth.recentWarnings()->getCount());
 	EXPECT_EQ(CUSTOM_OUT_OF_ORDER_COIL, eth.recentWarnings()->get(0).Code);
-	EXPECT_EQ(CUSTOM_CAM_TOO_MANY_TEETH, eth.recentWarnings()->get(1).Code);
-	EXPECT_EQ(CUSTOM_PRIMARY_NOT_ENOUGH_TEETH, eth.recentWarnings()->get(2).Code);
+	EXPECT_EQ(CUSTOM_PRIMARY_NOT_ENOUGH_TEETH, eth.recentWarnings()->get(1).Code);
+	EXPECT_EQ(CUSTOM_CAM_TOO_MANY_TEETH, eth.recentWarnings()->get(2).Code);
 }
 
 TEST(realCrankingNB2, crankingMissingInjector) {
 	CsvReader reader(1, /* vvtCount */ 1);
-	int indeces[] = {0};
 
-	reader.open("tests/trigger/resources/nb2-cranking-good-missing-injector-1.csv", indeces);
+	reader.open("tests/trigger/resources/nb2-cranking-good-missing-injector-1.csv");
 	EngineTestHelper eth (HELLEN_NB2);
 	engineConfiguration->alwaysInstantRpm = true;
 
@@ -54,7 +52,7 @@ TEST(realCrankingNB2, crankingMissingInjector) {
 
 	EXPECT_EQ(4, eth.recentWarnings()->getCount());
 	EXPECT_EQ(CUSTOM_OUT_OF_ORDER_COIL, eth.recentWarnings()->get(0).Code);
-	EXPECT_EQ(CUSTOM_CAM_TOO_MANY_TEETH, eth.recentWarnings()->get(1).Code);
-	EXPECT_EQ(CUSTOM_PRIMARY_NOT_ENOUGH_TEETH, eth.recentWarnings()->get(2).Code);
+	EXPECT_EQ(CUSTOM_PRIMARY_NOT_ENOUGH_TEETH, eth.recentWarnings()->get(1).Code);
+	EXPECT_EQ(CUSTOM_CAM_TOO_MANY_TEETH, eth.recentWarnings()->get(2).Code);
 	EXPECT_EQ(CUSTOM_PRIMARY_TOO_MANY_TEETH, eth.recentWarnings()->get(3).Code);
 }

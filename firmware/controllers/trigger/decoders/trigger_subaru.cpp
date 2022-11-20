@@ -9,12 +9,14 @@
 
 #include "trigger_subaru.h"
 
-static void initialize_one_of_36_2_2_2(TriggerWaveform *s, int firstCount, int secondCount, bool hasRotaryRelevance) {
-	s->initialize(FOUR_STROKE_CRANK_SENSOR);
+static void initialize_one_of_36_2_2_2(TriggerWaveform *s, int firstCount, int secondCount, bool knownOperationModeHack) {
+	s->initialize(FOUR_STROKE_CRANK_SENSOR, SyncEdge::RiseOnly);
 
 #if EFI_UNIT_TEST
 	// placed on 'cam' on '2-stroke' rotary
-	s->knownOperationMode = false;
+	if (knownOperationModeHack) {
+		s->knownOperationMode = false;
+	}
 #endif // EFI_UNIT_TEST
 
 	float wide = 30 * 2;
@@ -23,27 +25,26 @@ static void initialize_one_of_36_2_2_2(TriggerWaveform *s, int firstCount, int s
 	float base = 0;
 
 	for (int i = 0; i < firstCount; i++) {
-		s->addEvent720(base + narrow / 2, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
-		s->addEvent720(base + narrow, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
+		s->addEvent720(base + narrow / 2, TriggerValue::FALL, TriggerWheel::T_PRIMARY);
+		s->addEvent720(base + narrow, TriggerValue::RISE, TriggerWheel::T_PRIMARY);
 		base += narrow;
 	}
 
-	s->addEvent720(base + wide / 2, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
-	s->addEvent720(base + wide, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
+	s->addEvent720(base + wide / 2, TriggerValue::FALL, TriggerWheel::T_PRIMARY);
+	s->addEvent720(base + wide, TriggerValue::RISE, TriggerWheel::T_PRIMARY);
 	base += wide;
 
 	for (int i = 0; i < secondCount; i++) {
-		s->addEvent720(base + narrow / 2, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
-		s->addEvent720(base + narrow, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
+		s->addEvent720(base + narrow / 2, TriggerValue::FALL, TriggerWheel::T_PRIMARY);
+		s->addEvent720(base + narrow, TriggerValue::RISE, TriggerWheel::T_PRIMARY);
 		base += narrow;
 	}
 
-	s->addEvent720(720 - wide - wide / 2, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
-	s->addEvent720(720 - wide, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
+	s->addEvent720(720 - wide - wide / 2, TriggerValue::FALL, TriggerWheel::T_PRIMARY);
+	s->addEvent720(720 - wide, TriggerValue::RISE, TriggerWheel::T_PRIMARY);
 
-	s->addEvent720(720 - wide / 2, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
-	s->addEvent720(720, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->useOnlyPrimaryForSync = true;
+	s->addEvent720(720 - wide / 2, TriggerValue::FALL, TriggerWheel::T_PRIMARY);
+	s->addEvent720(720, TriggerValue::RISE, TriggerWheel::T_PRIMARY);
 }
 
 /**
@@ -51,7 +52,7 @@ static void initialize_one_of_36_2_2_2(TriggerWaveform *s, int firstCount, int s
  * https://rusefi.com/forum/viewtopic.php?f=2&t=1932
  */
 void initialize36_2_2_2(TriggerWaveform *s) {
-	initialize_one_of_36_2_2_2(s, 12, 15, true);
+	initialize_one_of_36_2_2_2(s, 12, 15, /*knownOperationModeHack*/true);
 
 	s->setTriggerSynchronizationGap(0.333f);
 	s->setSecondTriggerSynchronizationGap(1.0f);
@@ -59,7 +60,7 @@ void initialize36_2_2_2(TriggerWaveform *s) {
 }
 
 void initializeSubaruEZ30(TriggerWaveform *s) {
-	initialize_one_of_36_2_2_2(s, 18, 9, true);
+	initialize_one_of_36_2_2_2(s, 18, 9, /*knownOperationModeHack*/false);
 
 	s->setTriggerSynchronizationGap3(/*gapIndex*/0, 0.25, 0.5);
 	s->setTriggerSynchronizationGap3(/*gapIndex*/1, 0.7, 1.5);
@@ -67,7 +68,7 @@ void initializeSubaruEZ30(TriggerWaveform *s) {
 }
 
 static void initializeSubaru7_6(TriggerWaveform *s, bool withCrankWheel) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::RiseOnly);
 
 	/* To make trigger decoder happy last event should be exactly at 720
 	 * This code generates two trigger patterns: crank+cam (7+6) and
@@ -86,22 +87,22 @@ static void initializeSubaru7_6(TriggerWaveform *s, bool withCrankWheel) {
 	/* 97 degrees BTDC, but we have 20 degrees shift:
 	 * 180 - 97 - 20 = 63 */
 	#define SUBARU76_CRANK_PULSE0(cycle) \
-		s->addEvent720((180 * (cycle)) + 63 - width, TriggerWheel::T_SECONDARY, TriggerValue::RISE);	\
-		s->addEvent720((180 * (cycle)) + 63, TriggerWheel::T_SECONDARY, TriggerValue::FALL)
+		s->addEvent720((180 * (cycle)) + 63 - width, TriggerValue::RISE, TriggerWheel::T_SECONDARY);	\
+		s->addEvent720((180 * (cycle)) + 63, TriggerValue::FALL, TriggerWheel::T_SECONDARY)
 	/* 65 degrees BTDC, but we have 20 degrees shift:
 	 * 180 - 65 - 20 = 95 */
 	#define SUBARU76_CRANK_PULSE1(cycle) \
-		s->addEvent720((180 * (cycle)) + 95 - width, TriggerWheel::T_SECONDARY, TriggerValue::RISE);	\
-		s->addEvent720((180 * (cycle)) + 95, TriggerWheel::T_SECONDARY, TriggerValue::FALL)
+		s->addEvent720((180 * (cycle)) + 95 - width, TriggerValue::RISE, TriggerWheel::T_SECONDARY);	\
+		s->addEvent720((180 * (cycle)) + 95, TriggerValue::FALL, TriggerWheel::T_SECONDARY)
 	/* 10 degrees BTDC, but we have 20 degrees shift:
 	 * 180 - 10 - 20 = 150 */
 	#define SUBARU76_CRANK_PULSE2(cycle) \
-		s->addEvent720((180 * (cycle)) + 150 - width, TriggerWheel::T_SECONDARY, TriggerValue::RISE);	\
-		s->addEvent720((180 * (cycle)) + 150, TriggerWheel::T_SECONDARY, TriggerValue::FALL)
+		s->addEvent720((180 * (cycle)) + 150 - width, TriggerValue::RISE, TriggerWheel::T_SECONDARY);	\
+		s->addEvent720((180 * (cycle)) + 150, TriggerValue::FALL, TriggerWheel::T_SECONDARY)
 
 	#define SUBARU76_CAM_PULSE(cycle, offset) \
-		s->addEvent720((180 * (cycle)) + (offset) - width, TriggerWheel::T_PRIMARY, TriggerValue::RISE);	\
-		s->addEvent720((180 * (cycle)) + (offset), TriggerWheel::T_PRIMARY, TriggerValue::FALL)
+		s->addEvent720((180 * (cycle)) + (offset) - width, TriggerValue::RISE, TriggerWheel::T_PRIMARY);	\
+		s->addEvent720((180 * (cycle)) + (offset), TriggerValue::FALL, TriggerWheel::T_PRIMARY)
 
 	/* (TDC#2 + 20) + 15 */
 	SUBARU76_CAM_PULSE(0, +15);
@@ -152,7 +153,7 @@ static void initializeSubaru7_6(TriggerWaveform *s, bool withCrankWheel) {
 	s->setTriggerSynchronizationGap2(6.53 * TRIGGER_GAP_DEVIATION_LOW, 10.4 * TRIGGER_GAP_DEVIATION_HIGH);
 	s->setTriggerSynchronizationGap3(1, 0.8 * TRIGGER_GAP_DEVIATION_LOW, 1 * TRIGGER_GAP_DEVIATION_HIGH);
 
-	s->useOnlyPrimaryForSync = true;
+	s->useOnlyPrimaryForSync = withCrankWheel;
 }
 
 void initializeSubaruOnly7(TriggerWaveform *s) {
@@ -202,14 +203,14 @@ void initializeSubaru_SVX(TriggerWaveform *s) {
 #define CRANK_1_RISE(n)		(CRANK_1_FALL(n) - width)
 
 #define SUBARU_SVX_CRANK1_PULSE(n) \
-	s->addEventAngle(20 + (30 * (n)) + offset - width, SVX_CRANK_1, TriggerValue::RISE);	\
-	s->addEventAngle(20 + (30 * (n)) + offset, SVX_CRANK_1, TriggerValue::FALL)
+	s->addEventAngle(20 + (30 * (n)) + offset - width, TriggerValue::RISE, SVX_CRANK_1);	\
+	s->addEventAngle(20 + (30 * (n)) + offset, TriggerValue::FALL, SVX_CRANK_1)
 
 	/* cam falling edge offset from preceding Cr #1 falling edge */
 	float cam_offset = (10.0 + 30.0 + 30.0 + 30.0) - 90.0;
 #define SUBARU_SVX_CAM_PULSE(n) \
-	s->addEvent720(CRANK_1_RISE(n) + cam_offset, SVX_CAM, TriggerValue::RISE);	\
-	s->addEvent720(CRANK_1_FALL(n) + cam_offset, SVX_CAM, TriggerValue::FALL)
+	s->addEvent720(CRANK_1_RISE(n) + cam_offset, TriggerValue::RISE, SVX_CAM);	\
+	s->addEvent720(CRANK_1_FALL(n) + cam_offset, TriggerValue::FALL, SVX_CAM)
 
 #ifdef SVX_CRANK_2
 	/* Cr #2 signle tooth falling edge is (55 + 1) BTDC
@@ -217,16 +218,16 @@ void initializeSubaru_SVX(TriggerWaveform *s) {
 	float crank_2_offset = (10.0 + 30.0 + 30.0) - (55.0 + 1.0);
 
 	#define SUBARU_SVX_CRANK2_PULSE(n) \
-		s->addEvent720(CRANK_1_RISE(n) + crank_2_offset, SVX_CRANK_2, TriggerValue::RISE); \
-		s->addEvent720(CRANK_1_FALL(n) + crank_2_offset, SVX_CRANK_2, TriggerValue::FALL)
+		s->addEvent720(CRANK_1_RISE(n) + crank_2_offset, TriggerValue::RISE, SVX_CRANK_2); \
+		s->addEvent720(CRANK_1_FALL(n) + crank_2_offset, TriggerValue::FALL, SVX_CRANK_2)
 #else
 	#define SUBARU_SVX_CRANK2_PULSE(n)	(void)(n)
 #endif
 
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
-
-	/* we should use only falling edges */
-	s->useRiseEdge = false;
+		/* we should use only falling edges */
+	// TODO: this trigger needs to be converted to SyncEdge::RiseOnly, so invert all rise/fall events!
+	// see https://github.com/rusefi/rusefi/issues/4624
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Fall);
 	s->isSynchronizationNeeded = false;
 	s->useOnlyPrimaryForSync = true;
 

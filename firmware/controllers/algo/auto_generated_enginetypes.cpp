@@ -1,6 +1,6 @@
 #include "global.h"
 #include "engine_types.h"
-// was generated automatically by rusEFI tool  from engine_types.h // by enum2string.jar tool on Sun Sep 04 13:56:17 UTC 2022
+// was generated automatically by rusEFI tool  from engine_types.h // by enum2string.jar tool on Wed Nov 16 16:42:26 UTC 2022
 // see also gen_config_and_enums.bat
 
 
@@ -297,10 +297,12 @@ case PROTEUS_BMW_M73:
   return "PROTEUS_BMW_M73";
 case PROTEUS_E65_6H_MAN_IN_THE_MIDDLE:
   return "PROTEUS_E65_6H_MAN_IN_THE_MIDDLE";
+case PROTEUS_GM_LS_4:
+  return "PROTEUS_GM_LS_4";
 case PROTEUS_HARLEY:
   return "PROTEUS_HARLEY";
-case PROTEUS_HONDA_ELEMENT_2003:
-  return "PROTEUS_HONDA_ELEMENT_2003";
+case PROTEUS_HONDA_K:
+  return "PROTEUS_HONDA_K";
 case PROTEUS_HONDA_OBD2A:
   return "PROTEUS_HONDA_OBD2A";
 case PROTEUS_LUA_DEMO:
@@ -339,16 +341,14 @@ case TEST_ISSUE_366_BOTH:
   return "TEST_ISSUE_366_BOTH";
 case TEST_ISSUE_366_RISE:
   return "TEST_ISSUE_366_RISE";
-case TEST_ISSUE_898:
-  return "TEST_ISSUE_898";
 case TEST_ROTARY:
   return "TEST_ROTARY";
 case TLE8888_BENCH_ENGINE:
   return "TLE8888_BENCH_ENGINE";
 case TOYOTA_2JZ_GTE_VVTi:
   return "TOYOTA_2JZ_GTE_VVTi";
-case TOYOTA_JZS147:
-  return "TOYOTA_JZS147";
+case UNUSED_38:
+  return "UNUSED_38";
 case UNUSED_48:
   return "UNUSED_48";
 case VW_ABA:
@@ -364,8 +364,6 @@ case TT_12_TOOTH_CRANK:
   return "TT_12_TOOTH_CRANK";
 case TT_1_16:
   return "TT_1_16";
-case TT_2JZ_1_12:
-  return "TT_2JZ_1_12";
 case TT_2JZ_3_34:
   return "TT_2JZ_3_34";
 case TT_36_2_1:
@@ -378,6 +376,8 @@ case TT_3_1_CAM:
   return "TT_3_1_CAM";
 case TT_60_2_VW:
   return "TT_60_2_VW";
+case TT_BENELLI_TRE:
+  return "TT_BENELLI_TRE";
 case TT_CHRYSLER_NGC_36_2_2:
   return "TT_CHRYSLER_NGC_36_2_2";
 case TT_DAIHATSU:
@@ -412,10 +412,10 @@ case TT_GM_7X:
   return "TT_GM_7X";
 case TT_HONDA_CBR_600:
   return "TT_HONDA_CBR_600";
-case TT_HONDA_K_12_1:
-  return "TT_HONDA_K_12_1";
-case TT_HONDA_K_4_1:
-  return "TT_HONDA_K_4_1";
+case TT_HONDA_K_CAM_4_1:
+  return "TT_HONDA_K_CAM_4_1";
+case TT_HONDA_K_CRANK_12_1:
+  return "TT_HONDA_K_CRANK_12_1";
 case TT_JEEP_18_2_2_2:
   return "TT_JEEP_18_2_2_2";
 case TT_JEEP_4_CYL:
@@ -508,8 +508,8 @@ case TT_VVT_NISSAN_VQ35:
   return "TT_VVT_NISSAN_VQ35";
 case TT_VVT_TOYOTA_4_1:
   return "TT_VVT_TOYOTA_4_1";
-case UNUSED_21:
-  return "UNUSED_21";
+case UNUSED_29:
+  return "UNUSED_29";
 case UNUSED_34:
   return "UNUSED_34";
   }

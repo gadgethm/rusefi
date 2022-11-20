@@ -95,7 +95,7 @@ void printConfiguration(const engine_configuration_s *engineConfiguration) {
 	efiPrintf("configurationVersion=%d", engine->getGlobalConfigurationVersion());
 
 	efiPrintf("rpmHardLimit: %d/operationMode=%d", engineConfiguration->rpmHardLimit,
-			engine->getOperationMode());
+			getEngineRotationState()->getOperationMode());
 
 	efiPrintf("globalTriggerAngleOffset=%.2f", engineConfiguration->globalTriggerAngleOffset);
 
@@ -229,19 +229,6 @@ void printTPSInfo(void) {
 	printTpsSenser("TPS2", SensorType::Tps2, engineConfiguration->tps2Min, engineConfiguration->tps2Max, engineConfiguration->tps2_1AdcChannel);
 }
 
-static void printTemperatureInfo() {
-#if EFI_ANALOG_SENSORS
-	Sensor::showAllSensorInfo();
-
-	efiPrintf("fan=%s @ %s", boolToString(enginePins.fanRelay.getLogicValue()),
-			hwPortname(engineConfiguration->fanPin));
-
-	efiPrintf("A/C relay=%s @ %s", boolToString(enginePins.acRelay.getLogicValue()),
-			hwPortname(engineConfiguration->acRelayPin));
-
-#endif /* EFI_ANALOG_SENSORS */
-}
-
 static void setCrankingRpm(int value) {
 	engineConfiguration->cranking.rpm = value;
 	doPrintConfiguration();
@@ -274,8 +261,6 @@ static void setCrankingIACExtra(float percent) {
 static void setCrankingFuel(float timeMs) {
 	engineConfiguration->cranking.baseFuel = timeMs;
 	efiPrintf("cranking_fuel %.2f", timeMs);
-
-	printTemperatureInfo();
 }
 
 static void setGlobalTriggerAngleOffset(float value) {
@@ -340,23 +325,6 @@ static void setDebugMode(int value) {
 static void setInjectorLag(float voltage, float value) {
 	setCurveValue(INJECTOR_LAG_CURVE, voltage, value);
 }
-
-/*
-static void setToothedWheel(int total, int skipped) {
-	if (total < 1 || skipped >= total) {
-		efiPrintf("invalid parameters %d %d", total, skipped);
-		return;
-	}
-	engineConfiguration->trigger.type = TT_TOOTHED_WHEEL;
-	engineConfiguration->trigger.customTotalToothCount = total;
-	engineConfiguration->trigger.customSkippedToothCount = skipped;
-
-	efiPrintf("toothed: total=%d/skipped=%d", total, skipped);
-	setToothedWheelConfiguration(&engine->triggerCentral.triggerShape, total, skipped, engineConfiguration->ambiguousOperationMode);
-	incrementGlobalConfigurationVersion();
-	doPrintConfiguration();
-}
-*/
 
 static void setGlobalFuelCorrection(float value) {
 	if (value < 0.01 || value > 50)
@@ -442,6 +410,7 @@ static void setIgnitionPin(const char *indexStr, const char *pinName) {
 }
 
 // this method is useful for desperate time debugging
+// readpin PA0
 void readPin(const char *pinName) {
 	brain_pin_e pin = parseBrainPinWithErrorMessage(pinName);
 	if (pin == Gpio::Invalid) {
@@ -450,7 +419,6 @@ void readPin(const char *pinName) {
 	int physicalValue = palReadPad(getHwPort("read", pin), getHwPin("read", pin));
 	efiPrintf("pin %s value %d", hwPortname(pin), physicalValue);
 }
-
 
 // this method is useful for desperate time debugging or hardware validation
 static void benchSetPinValue(const char *pinName, int bit) {
@@ -577,7 +545,7 @@ static void setTriggerSimulatorMode(const char *indexStr, const char *modeCode) 
 		return;
 	}
 	int mode = atoi(modeCode);
-	if (absI(mode) == ERROR_CODE) {
+	if (absI(mode) == ATOI_ERROR_CODE) {
 		return;
 	}
 	engineConfiguration->triggerSimulatorPinModes[index] = (pin_output_mode_e) mode;
@@ -692,7 +660,7 @@ static void setSpiMode(int index, bool mode) {
 
 static void enableOrDisable(const char *param, bool isEnabled) {
 	if (strEqualCaseInsensitive(param, CMD_TRIGGER_HW_INPUT)) {
-		engine->hwTriggerInputEnabled = isEnabled;
+		getTriggerCentral()->hwTriggerInputEnabled = isEnabled;
 	} else if (strEqualCaseInsensitive(param, "useTLE8888_cranking_hack")) {
 		engineConfiguration->useTLE8888_cranking_hack = isEnabled;
 	} else if (strEqualCaseInsensitive(param, "verboseTLE8888")) {
@@ -723,9 +691,6 @@ static void enableOrDisable(const char *param, bool isEnabled) {
 #endif /* EFI_PROD_CODE */
 	} else if (strEqualCaseInsensitive(param, "stepperidle")) {
 		engineConfiguration->useStepperIdle = isEnabled;
-	} else if (strEqualCaseInsensitive(param, "trigger_only_front")) {
-		engineConfiguration->useOnlyRisingEdgeForTrigger = isEnabled;
-		incrementGlobalConfigurationVersion();
 	} else if (strEqualCaseInsensitive(param, "two_wire_batch_injection")) {
 		engineConfiguration->twoWireBatchInjection = isEnabled;
 		incrementGlobalConfigurationVersion();
@@ -824,14 +789,6 @@ void scheduleStopEngine(void) {
 	doScheduleStopEngine();
 }
 
-static void printAllInfo() {
-	printTemperatureInfo();
-	printTPSInfo();
-#if EFI_ENGINE_SNIFFER
-	efiPrintf("waveChartUsedSize=%d", waveChartUsedSize);
-#endif
-}
-
 #if ! EFI_UNIT_TEST
 const plain_get_short_s getS_plain[] = {
 		{"idle_pid_min", (uint16_t *)&engineConfiguration->idleRpmPid.minValue},
@@ -911,22 +868,18 @@ static void getValue(const char *paramStr) {
 #endif /* EFI_PROD_CODE */
 	} else if (strEqualCaseInsensitive(paramStr, "tps_min")) {
 		efiPrintf("tps_min=%d", engineConfiguration->tpsMin);
-	} else if (strEqualCaseInsensitive(paramStr, "trigger_only_front")) {
-		efiPrintf("trigger_only_front=%d", engineConfiguration->useOnlyRisingEdgeForTrigger);
 	} else if (strEqualCaseInsensitive(paramStr, "tps_max")) {
 		efiPrintf("tps_max=%d", engineConfiguration->tpsMax);
 	} else if (strEqualCaseInsensitive(paramStr, "global_trigger_offset_angle")) {
 		efiPrintf("global_trigger_offset=%.2f", engineConfiguration->globalTriggerAngleOffset);
 	} else if (strEqualCaseInsensitive(paramStr, "trigger_hw_input")) {
-		efiPrintf("trigger_hw_input=%s", boolToString(engine->hwTriggerInputEnabled));
+		efiPrintf("trigger_hw_input=%s", boolToString(getTriggerCentral()->hwTriggerInputEnabled));
 	} else if (strEqualCaseInsensitive(paramStr, "is_enabled_spi_1")) {
 		efiPrintf("is_enabled_spi_1=%s", boolToString(engineConfiguration->is_enabled_spi_1));
 	} else if (strEqualCaseInsensitive(paramStr, "is_enabled_spi_2")) {
 		efiPrintf("is_enabled_spi_2=%s", boolToString(engineConfiguration->is_enabled_spi_2));
 	} else if (strEqualCaseInsensitive(paramStr, "is_enabled_spi_3")) {
 		efiPrintf("is_enabled_spi_3=%s", boolToString(engineConfiguration->is_enabled_spi_3));
-	} else if (strEqualCaseInsensitive(paramStr, "vvtCamSensorUseRise")) {
-		efiPrintf("vvtCamSensorUseRise=%s", boolToString(engineConfiguration->vvtCamSensorUseRise));
 	} else if (strEqualCaseInsensitive(paramStr, "invertCamVVTSignal")) {
 		efiPrintf("invertCamVVTSignal=%s", boolToString(engineConfiguration->invertCamVVTSignal));
 	} else if (strEqualCaseInsensitive(paramStr, "isHip9011Enabled")) {
@@ -1110,8 +1063,6 @@ static void setValue(const char *paramStr, const char *valueStr) {
 		engineConfiguration->vvtOffsets[0] = valueF;
 	} else if (strEqualCaseInsensitive(paramStr, "vvt_mode")) {
 		engineConfiguration->vvtMode[0] = (vvt_mode_e)valueI;
-	} else if (strEqualCaseInsensitive(paramStr, "vvtCamSensorUseRise")) {
-		engineConfiguration->vvtCamSensorUseRise = valueI;
 	} else if (strEqualCaseInsensitive(paramStr, "wwaeTau")) {
 		engineConfiguration->wwaeTau = valueF;
 	} else if (strEqualCaseInsensitive(paramStr, "wwaeBeta")) {
@@ -1145,11 +1096,9 @@ void initSettings(void) {
 	// todo: start saving values into flash right away?
 
 	addConsoleAction("showconfig", doPrintConfiguration);
-	addConsoleAction("tempinfo", printTemperatureInfo);
 	addConsoleAction("tpsinfo", printTPSInfo);
 	addConsoleAction("calibrate_tps_1_closed", grabTPSIsClosed);
 	addConsoleAction("calibrate_tps_1_wot", grabTPSIsWideOpen);
-	addConsoleAction("info", printAllInfo);
 
 	addConsoleAction("set_one_coil_ignition", setOneCoilIgnition);
 	addConsoleAction("set_wasted_spark_ignition", setWastedIgnition);
@@ -1168,8 +1117,6 @@ void initSettings(void) {
 
 	addConsoleActionS(CMD_ENABLE, enable);
 	addConsoleActionS(CMD_DISABLE, disable);
-
-//	addConsoleActionII("set_toothed_wheel", setToothedWheel);
 
 	addConsoleActionFF("set_injector_lag", setInjectorLag);
 

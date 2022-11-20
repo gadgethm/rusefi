@@ -37,6 +37,8 @@ private:
 	SimplePwm m_pwm1;
 	SimplePwm m_pwm2;
 
+	bool isStarted = false;
+
 public:
 	DcHardware() : dcMotor(m_disablePin) {}
 
@@ -47,6 +49,10 @@ public:
 		m_pwm2.setFrequency(frequency);
 	}
 
+	void stop() {
+		// todo: replace 'isStarted' with 'stop'
+	}
+
 	void start(bool useTwoWires, 
 			brain_pin_e pinEnable,
 			brain_pin_e pinDir1,
@@ -55,6 +61,13 @@ public:
 			bool isInverted,
 			ExecutorInterface* executor,
 			int frequency) {
+
+		if (isStarted) {
+			// actually implement stop()
+			return;
+		}
+		isStarted = true;
+
 		dcMotor.setType(useTwoWires ? TwoPinDcMotor::ControlType::PwmDirectionPins : TwoPinDcMotor::ControlType::PwmEnablePin);
 
 		// Configure the disable pin first - ensure things are in a safe state
@@ -123,6 +136,7 @@ DcMotor* initDcMotor(const dc_io& io, size_t index, bool useTwoWires) {
 		io.directionPin1,
 		io.directionPin2,
 		io.disablePin,
+		// todo You would not believe how you invert TLE9201 #4579
 		engineConfiguration->stepperDcInvertedPins,
 		&engine->executor,
 		engineConfiguration->etbFreq
