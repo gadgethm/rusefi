@@ -76,7 +76,7 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->tps2_1AdcChannel = EFI_ADC_NONE;
 
 	engineConfiguration->mafAdcChannel = EFI_ADC_10;
-	engineConfiguration->map.sensor.hwChannel = EFI_ADC_2;
+	engineConfiguration->map.sensor.hwChannel = EFI_ADC_11;
 
 	engineConfiguration->afr.hwChannel = EFI_ADC_1;
 
@@ -86,8 +86,6 @@ static void setupDefaultSensorInputs() {
 
 	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
 	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
-
-	engineConfiguration->oilPressure.hwChannel = EFI_ADC_11;
 }
 
 void setBoardConfigOverrides() {
@@ -120,12 +118,12 @@ void setBoardDefaultConfiguration() {
 
 	// these stm32 pins do not match hellen_meta, is that because hellenNA6 is not using latest MCU version?
 	engineConfiguration->acRelayPin = Gpio::H15; // 1J - AC Relay
-	engineConfiguration->fuelPumpPin = Gpio::H13;	// OUT_HIGH1, white wire to P3 for controlling ST_SIG instead of going to rewired AFM
+	engineConfiguration->fuelPumpPin = Gpio::G2;	// OUT_IO9
 	engineConfiguration->idle.solenoidPin = Gpio::D14;	// OUT_PWM5
 	engineConfiguration->fanPin = Gpio::D12;	// OUT_PWM8
 	engineConfiguration->mainRelayPin = Gpio::I2;	// OUT_LOW3
 	engineConfiguration->tachOutputPin = Gpio::I0;
-	engineConfiguration->malfunctionIndicatorPin = Gpio::G4;
+	engineConfiguration->malfunctionIndicatorPin = Gpio::G9;
 
 	engineConfiguration->vehicleSpeedSensorInputPin = H144_IN_VSS;
 

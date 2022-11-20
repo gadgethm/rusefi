@@ -11,14 +11,14 @@ pins:
   - pin: 1B
     id: EFI_ADC_5
     class: analog_inputs
-    ts_name: 1B - Battery Sense
+    ts_name: A5 (1B) - Battery Sense
     function: ECU power in start & run
     type: 12V
 
   - pin: 1C
     id: H13
     class: outputs
-    ts_name: 1C - ST_SIG
+    ts_name: H13 (1C) - ST_SIG
     function: Fuel Pump Relay
     type: ls
 
@@ -26,27 +26,27 @@ pins:
     function: CAN bus high
     type: can
 
+  - pin: 1E
+    id: G4
+    class: outputs
+    ts_name: G4(1E) - Check Engine Light
+    function: Check Engine Light
+    type: ls
+
   - pin: 1F
     function: CAN bus low
     type: can
 
-  - pin: 1E
-    id: G4
-    class: outputs
-    ts_name: 1E - Check Engine Light
-    function: Check Engine Light
-    type: ls
-
   - pin: 1G
     id: I8
     class: outputs
-    ts_name: 1G - Ignition 1 & 4
+    ts_name: I8 (1G) - Ignition 1 & 4
     type: ign
  
   - pin: 1H
     id: E5
     class: outputs
-    ts_name: 1H - Ignition 2 & 3
+    ts_name: E5 (1H) - Ignition 2 & 3
     type: ign
 
   - pin: 1I
@@ -56,43 +56,49 @@ pins:
   - pin: 1J
     id: H15
     class: outputs
-    ts_name: 1J - AC Relay
+    ts_name: H15 (1J) - AC Relay
     function: A/C Relay
     type: ls
 
   - pin: 1L
-    id: D12
-    class: outputs
-    ts_name: Radiator Fan
     function: Radiator Fan Relay
-    type: ls
     
   - pin: 1N
-    ts_name: 1N - 5v ref NA6
+    ts_name: +5V (1N) - 5v ref NA6
+    function: Sensor +5V
+
+  - pin: 1O
+    ts_name: +5V (1N) - 5v ref NA6
     function: Sensor +5V
 
   - pin: 1Q
     id: [C5, EFI_ADC_15]
     class: [switch_inputs, analog_inputs]
-    ts_name: 1Q AC Switch
+    ts_name: C5 (1Q) - AC Switch
     function: A/C switch input
     type: din
 
-  - pin: 1R      
-    function: Coolant Fan Relay
-    
+  - pin: 1R
+    id: D12
+    class: outputs
+    ts_name: D12 (1R) - Radiator Fan
+    function: Radiator Fan Relay
+    type: ls    
 
   - pin: 1S
-    ts_name: 1S - Heate Input
+    ts_name: P17 (1S) - Heater Input
     function: Heater Input
 
   - pin: 1T
     function: EGR Solenoid
 
+  - pin: 1U
+    function: Lights Input
+
   - pin: 1V
     id: [C4, EFI_ADC_14]
     class: [switch_inputs, analog_inputs]
-    ts_name: 1V - Clutch Switch
+    ts_name: C4 (1V) - Clutch Switch
     function: Clutch switch input
     type: din
 
@@ -123,14 +129,14 @@ pins:
   - pin: 2I
     id: F14
     class: outputs
-    ts_name: 2I - VVT
+    ts_name: F14 (2I) - VVT
     function: VVT Output
     type: ls
     
   - pin: 2J
     id: F12
     class: outputs
-    ts_name: 2J - Boost Control
+    ts_name: F12 (2J) - Boost Control
     function: Boost Control Solenoid
     
   - pin: 2K     
@@ -139,7 +145,7 @@ pins:
   - pin: 2L
     id: F3
     class: event_inputs
-    ts_name: 2L - Flex Fuel
+    ts_name: F3 (2L) - Flex Fuel
     function: Flex Fuel Input
   
   - pin: 2M
@@ -151,13 +157,15 @@ pins:
   - pin: 2N
     id: [A1, EFI_ADC_1]
     class: [switch_inputs, analog_inputs]
-    ts_name: 2N - Temperature Sensor
+    ts_name: A1 (2N) - Temperature Sensor
     function: temp input
 
   - pin: 2O    
     function: +5v 
     
   - pin: 2P
+    id: F7
+    class: []
     function: Knock Input   
 
   - pin: 3A
