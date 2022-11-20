@@ -32,14 +32,18 @@
 static char shaft_signal_msg_index[15];
 
 #if EFI_ENGINE_SNIFFER
+#define addEngineSnifferEvent(name, msg) { if (getTriggerCentral()->isEngineSnifferEnabled) { waveChart.addEvent3((name), (msg)); } }
+ #else
+#define addEngineSnifferEvent(n, msg) {}
+#endif /* EFI_ENGINE_SNIFFER */
+
+#if EFI_ENGINE_SNIFFER
 
 #include "eficonsole.h"
 #include "status_loop.h"
 
 #define CHART_DELIMETER	'!'
 extern WaveChart waveChart;
-
-extern uint32_t maxLockedDuration;
 
 /**
  * This is the number of events in the digital chart which would be displayed
@@ -114,7 +118,7 @@ int WaveChart::getSize() {
 
 #if ! EFI_UNIT_TEST
 static void printStatus() {
-	efiPrintf("engine sniffer: %s", boolToString(engine->isEngineSnifferEnabled));
+	efiPrintf("engine sniffer: %s", boolToString(getTriggerCentral()->isEngineSnifferEnabled));
 	efiPrintf("engine sniffer size=%d", engineConfiguration->engineChartSize);
 }
 
@@ -141,7 +145,7 @@ void WaveChart::publish() {
 	Logging *l = &chart->logging;
 	efiPrintf("IT'S TIME", strlen(l->buffer));
 #endif
-	if (engine->isEngineSnifferEnabled) {
+	if (getTriggerCentral()->isEngineSnifferEnabled) {
 		scheduleLogging(&logging);
 	}
 }
@@ -157,7 +161,7 @@ void WaveChart::addEvent3(const char *name, const char * msg) {
 	if (nowNt < pauseEngineSnifferUntilNt) {
 		return;
 	}
-	if (!engine->isEngineSnifferEnabled) {
+	if (!getTriggerCentral()->isEngineSnifferEnabled) {
 		return;
 	}
 	if (skipUntilEngineCycle != 0 && getRevolutionCounter() < skipUntilEngineCycle)
@@ -241,6 +245,12 @@ void initWaveChart(WaveChart *chart) {
 }
 
 #endif /* EFI_ENGINE_SNIFFER */
+
+void addEngineSnifferOutputPinEvent(NamedOutputPin *pin, FrontDirection frontDirection) {
+	if (!engineConfiguration->engineSnifferFocusOnInputs) {
+		addEngineSnifferEvent(pin->getShortName(), frontDirection == FrontDirection::UP ? PROTOCOL_ES_UP : PROTOCOL_ES_DOWN);
+	}
+}
 
 void addEngineSnifferTdcEvent(int rpm) {
 	static char rpmBuffer[_MAX_FILLER];

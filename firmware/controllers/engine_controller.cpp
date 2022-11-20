@@ -53,6 +53,7 @@
 #include "start_stop.h"
 #include "dynoview.h"
 #include "vr_pwm.h"
+#include "adc_subscription.h"
 
 #if EFI_SENSOR_CHART
 #include "sensor_chart.h"
@@ -180,7 +181,7 @@ static void doPeriodicSlowCallback() {
 
 	engine->rpmCalculator.onSlowCallback();
 
-	if (engine->directSelfStimulation || engine->rpmCalculator.isStopped()) {
+	if (engine->triggerCentral.directSelfStimulation || engine->rpmCalculator.isStopped()) {
 		/**
 		 * rusEfi usually runs on hardware which halts execution while writing to internal flash, so we
 		 * postpone writes to until engine is stopped. Writes in case of self-stimulation are fine.
@@ -194,8 +195,6 @@ static void doPeriodicSlowCallback() {
 
 	if (engine->rpmCalculator.isStopped()) {
 		resetAccel();
-	} else {
-		updatePrimeInjectionPulseState();
 	}
 
 	if (engine->versionForConfigurationListeners.isOld(engine->getGlobalConfigurationVersion())) {
@@ -237,68 +236,18 @@ char * getPinNameByAdcChannel(const char *msg, adc_channel_e hwChannel, char *bu
 	return buffer;
 }
 
-static char pinNameBuffer[16];
-
 #if HAL_USE_ADC
 extern AdcDevice fastAdc;
 #endif /* HAL_USE_ADC */
 
-static void printAnalogChannelInfoExt(const char *name, adc_channel_e hwChannel, float adcVoltage,
-		float dividerCoeff) {
+static void printSensorInfo() {
 #if HAL_USE_ADC
-	if (!isAdcChannelValid(hwChannel)) {
-		efiPrintf("ADC is not assigned for %s", name);
-		return;
-	}
+	// Print info about analog mappings
+	AdcSubscription::PrintInfo();
+#endif // HAL_USE_ADC
 
-	float voltage = adcVoltage * dividerCoeff;
-	efiPrintf("%s ADC%d m=%d %s adc=%.2f/input=%.2fv/divider=%.2f", name, hwChannel, getAdcMode(hwChannel),
-			getPinNameByAdcChannel(name, hwChannel, pinNameBuffer), adcVoltage, voltage, dividerCoeff);
-#endif /* HAL_USE_ADC */
-}
-
-static void printAnalogChannelInfo(const char *name, adc_channel_e hwChannel) {
-#if HAL_USE_ADC
-	printAnalogChannelInfoExt(name, hwChannel, getVoltage(name, hwChannel), engineConfiguration->analogInputDividerCoefficient);
-#endif /* HAL_USE_ADC */
-}
-
-static void printAnalogInfo() {
-	efiPrintf("analogInputDividerCoefficient: %.2f", engineConfiguration->analogInputDividerCoefficient);
-
-	printAnalogChannelInfo("hip9011", engineConfiguration->hipOutputChannel);
-	printAnalogChannelInfo("fuel gauge", engineConfiguration->fuelLevelSensor);
-	printAnalogChannelInfo("TPS1 Primary", engineConfiguration->tps1_1AdcChannel);
-	printAnalogChannelInfo("TPS1 Secondary", engineConfiguration->tps1_2AdcChannel);
-	printAnalogChannelInfo("TPS2 Primary", engineConfiguration->tps2_1AdcChannel);
-	printAnalogChannelInfo("TPS2 Secondary", engineConfiguration->tps2_2AdcChannel);
-	printAnalogChannelInfo("LPF", engineConfiguration->lowPressureFuel.hwChannel);
-	printAnalogChannelInfo("HPF", engineConfiguration->highPressureFuel.hwChannel);
-	printAnalogChannelInfo("pPS1", engineConfiguration->throttlePedalPositionAdcChannel);
-	printAnalogChannelInfo("pPS2", engineConfiguration->throttlePedalPositionSecondAdcChannel);
-	printAnalogChannelInfo("CLT", engineConfiguration->clt.adcChannel);
-	printAnalogChannelInfo("IAT", engineConfiguration->iat.adcChannel);
-	printAnalogChannelInfo("AuxT1", engineConfiguration->auxTempSensor1.adcChannel);
-	printAnalogChannelInfo("AuxT2", engineConfiguration->auxTempSensor2.adcChannel);
-	printAnalogChannelInfo("MAF", engineConfiguration->mafAdcChannel);
-	for (int i = 0; i < AUX_ANALOG_INPUT_COUNT ; i++) {
-		adc_channel_e ch = engineConfiguration->auxAnalogInputs[i];
-		printAnalogChannelInfo("Aux analog", ch);
-	}
-
-	printAnalogChannelInfo("AFR", engineConfiguration->afr.hwChannel);
-	printAnalogChannelInfo("MAP", engineConfiguration->map.sensor.hwChannel);
-	printAnalogChannelInfo("BARO", engineConfiguration->baroSensor.hwChannel);
-
-	printAnalogChannelInfo("OilP", engineConfiguration->oilPressure.hwChannel);
-
-	printAnalogChannelInfo("CJ UR", engineConfiguration->cj125ur);
-	printAnalogChannelInfo("CJ UA", engineConfiguration->cj125ua);
-
-	printAnalogChannelInfo("HIP9011", engineConfiguration->hipOutputChannel);
-
-	printAnalogChannelInfoExt("Vbatt", engineConfiguration->vbattAdcChannel, getVoltage("vbatt", engineConfiguration->vbattAdcChannel),
-			engineConfiguration->vbattDividerCoeff);
+	// Print info about all sensors
+	Sensor::showAllSensorInfo();
 }
 
 #define isOutOfBounds(offset) ((offset<0) || (offset) >= (int) sizeof(engine_configuration_s))
@@ -327,7 +276,7 @@ static void getByte(int offset) {
 
 static void setBit(const char *offsetStr, const char *bitStr, const char *valueStr) {
 	int offset = atoi(offsetStr);
-	if (absI(offset) == absI(ERROR_CODE)) {
+	if (absI(offset) == absI(ATOI_ERROR_CODE)) {
 		efiPrintf("invalid offset [%s]", offsetStr);
 		return;
 	}
@@ -335,12 +284,12 @@ static void setBit(const char *offsetStr, const char *bitStr, const char *valueS
 		return;
 	}
 	int bit = atoi(bitStr);
-	if (absI(bit) == absI(ERROR_CODE)) {
+	if (absI(bit) == absI(ATOI_ERROR_CODE)) {
 		efiPrintf("invalid bit [%s]", bitStr);
 		return;
 	}
 	int value = atoi(valueStr);
-	if (absI(value) == absI(ERROR_CODE)) {
+	if (absI(value) == absI(ATOI_ERROR_CODE)) {
 		efiPrintf("invalid value [%s]", valueStr);
 		return;
 	}
@@ -415,7 +364,7 @@ static void getFloat(int offset) {
 
 static void setFloat(const char *offsetStr, const char *valueStr) {
 	int offset = atoi(offsetStr);
-	if (absI(offset) == absI(ERROR_CODE)) {
+	if (absI(offset) == absI(ATOI_ERROR_CODE)) {
 		efiPrintf("invalid offset [%s]", offsetStr);
 		return;
 	}
@@ -464,8 +413,10 @@ void commonInitEngineController() {
 	 * This has to go after 'enginePins.startPins()' in order to
 	 * properly detect un-assigned output pins
 	 */
-	prepareShapes();
-#endif /* EFI_PROD_CODE && EFI_ENGINE_CONTROL */
+	prepareOutputSignals();
+
+	engine->injectionEvents.addFuelEvents();
+#endif // EFI_ENGINE_CONTROL
 
 #if EFI_SENSOR_CHART
 	initSensorChart();
@@ -522,13 +473,9 @@ void commonInitEngineController() {
 	initLaunchControl();
 #endif
 
-#if EFI_SHAFT_POSITION_INPUT
-	/**
-	 * there is an implicit dependency on the fact that 'tachometer' listener is the 1st listener - this case
-	 * other listeners can access current RPM value
-	 */
-	initRpmCalculator();
-#endif /* EFI_SHAFT_POSITION_INPUT */
+#if EFI_UNIT_TEST
+	engine->rpmCalculator.Register();
+#endif /* EFI_UNIT_TEST */
 
 #if (EFI_ENGINE_CONTROL && EFI_SHAFT_POSITION_INPUT) || EFI_SIMULATOR || EFI_UNIT_TEST
 	if (engineConfiguration->isEngineControlEnabled) {
@@ -632,13 +579,13 @@ bool validateConfig() {
 	}
 
 	// VVT
-	if (engineConfiguration->camInputs[0] != Gpio::Unassigned) {
+	if (isBrainPinValid(engineConfiguration->camInputs[0])) {
 		ensureArrayIsAscending("VVT intake load", config->vvtTable1LoadBins);
 		ensureArrayIsAscending("VVT intake RPM", config->vvtTable1RpmBins);
 	}
 
 #if CAM_INPUTS_COUNT != 1
-	if (engineConfiguration->camInputs[1] != Gpio::Unassigned) {
+	if (isBrainPinValid(engineConfiguration->camInputs[1])) {
 		ensureArrayIsAscending("VVT exhaust load", config->vvtTable2LoadBins);
 		ensureArrayIsAscending("VVT exhaust RPM", config->vvtTable2RpmBins);
 	}
@@ -649,8 +596,8 @@ bool validateConfig() {
 
 #if !EFI_UNIT_TEST
 
-void initEngineContoller() {
-	addConsoleAction("analoginfo", printAnalogInfo);
+void initEngineController() {
+	addConsoleAction("sensorinfo", printSensorInfo);
 
 #if EFI_PROD_CODE && EFI_ENGINE_CONTROL
 	initBenchTest();
@@ -688,7 +635,7 @@ void initEngineContoller() {
 #endif /* EFI_ALTERNATOR_CONTROL */
 
 #if EFI_AUX_PID
-	initAuxPid();
+	initVvtActuators();
 #endif /* EFI_AUX_PID */
 
 #if EFI_MALFUNCTION_INDICATOR
@@ -716,10 +663,10 @@ void initEngineContoller() {
  * UNUSED_SIZE constants.
  */
 #ifndef RAM_UNUSED_SIZE
-#define RAM_UNUSED_SIZE 13000
+#define RAM_UNUSED_SIZE 30000
 #endif
 #ifndef CCM_UNUSED_SIZE
-#define CCM_UNUSED_SIZE 16
+#define CCM_UNUSED_SIZE 512
 #endif
 static char UNUSED_RAM_SIZE[RAM_UNUSED_SIZE];
 static char UNUSED_CCM_SIZE[CCM_UNUSED_SIZE] CCM_OPTIONAL;

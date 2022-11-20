@@ -69,15 +69,6 @@ enum class SensorType : unsigned char {
 
 	FuelLevel,
 
-	Aux1,
-	Aux2,
-	Aux3,
-	Aux4,
-	Aux5,
-	Aux6,
-	Aux7,
-	Aux8,
-
 	VehicleSpeed,
 
 	TurbochargerSpeed,
@@ -88,17 +79,38 @@ enum class SensorType : unsigned char {
 	// MAP decoding happens only that often thus this is NOT raw MAP as flows from ADC
 	MapSlow,
 
-	AuxLinear1,
-	AuxLinear2,
-
-	AuxSpeed1,
-	AuxSpeed2,
-
-
 	InputShaftSpeed,
 
 	EGT1,
 	EGT2,
+
+	Maf2,	// Second bank MAF sensor
+
+	Map2,
+	MapSlow2,
+	MapFast2,
+
+	// analog voltage inputs for Lua
+	AuxAnalog1,
+	AuxAnalog2,
+	AuxAnalog3,
+	AuxAnalog4,
+	AuxAnalog5,
+	AuxAnalog6,
+	AuxAnalog7,
+	AuxAnalog8,
+
+	LuaGauge1,
+	LuaGauge2,
+
+	AuxLinear1,
+	AuxLinear2,
+
+	// frequency sensors
+	AuxSpeed1,
+	AuxSpeed2,
+
+	// Let's always have all auxiliary sensors at the end - please add specific sensors above auxiliary
 
 	// Leave me at the end!
 	PlaceholderLast,

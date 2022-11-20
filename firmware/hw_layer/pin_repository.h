@@ -12,9 +12,9 @@
 
 #include "global.h"
 #include "io_pins.h"
+#include "efi_gpio.h"
 
 #ifdef __cplusplus
-#include "efi_gpio.h"
 
 class PinRepository {
 	public:
@@ -22,7 +22,6 @@ class PinRepository {
 	 * Class constructors are a great way to have simple initialization sequence
 	 */
 	PinRepository();
-	int totalPinsUsed = 0;
 	const char *PIN_USED[BRAIN_PIN_TOTAL_PINS];
 };
 

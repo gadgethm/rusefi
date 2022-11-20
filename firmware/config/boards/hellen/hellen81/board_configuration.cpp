@@ -82,7 +82,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->camInputs[0] = Gpio::A6;
 
 	engineConfiguration->tps1_1AdcChannel = EFI_ADC_4;
-	engineConfiguration->tps2_1AdcChannel = EFI_ADC_NONE;
 
 	engineConfiguration->mafAdcChannel = EFI_ADC_NONE;
 	engineConfiguration->map.sensor.hwChannel = EFI_ADC_10;
@@ -92,9 +91,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->clt.adcChannel = H144_IN_CLT;	// ADC3_0
 
 	engineConfiguration->iat.adcChannel = H144_IN_IAT;	// ADC3_1
-
-	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
-	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
 }
 
 void setBoardConfigOverrides() {
@@ -111,8 +107,7 @@ void setBoardConfigOverrides() {
 	engineConfiguration->clt.config.bias_resistor = 4700;
 	engineConfiguration->iat.config.bias_resistor = 4700;
 
-	engineConfiguration->canTxPin = Gpio::D1;
-	engineConfiguration->canRxPin = Gpio::D0;
+	setHellenCan();
 }
 
 /**
@@ -127,9 +122,6 @@ void setBoardDefaultConfiguration() {
 	setIgnitionPins();
 
 	engineConfiguration->isSdCardEnabled = true;
-
-	engineConfiguration->canTxPin = Gpio::D1;
-	engineConfiguration->canRxPin = Gpio::D0;
 
 	engineConfiguration->fuelPumpPin = Gpio::G2;	// OUT_IO9
 	engineConfiguration->fanPin = Gpio::D12;	// OUT_PWM8

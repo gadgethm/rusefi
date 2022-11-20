@@ -2,7 +2,7 @@ package com.rusefi.config;
 
 import com.macfaq.io.LittleEndianOutputStream;
 import com.opensr5.ConfigurationImage;
-import com.rusefi.shared.FileUtil;
+import com.rusefi.core.FileUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
@@ -156,6 +156,19 @@ public class Field {
             throw new IllegalStateException("Unsupported enum " + type);
         int ordinal = ci.getByteBuffer(offset, type.getStorageSize()).get();
         return options[ordinal];
+    }
+
+    // todo: move universal setValue one day
+    public void setValueU32(byte[] content, int value) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        LittleEndianOutputStream dout = new LittleEndianOutputStream(baos);
+        try {
+            dout.writeInt(value);
+            byte[] src = baos.toByteArray();
+            System.arraycopy(src, 0, content, getOffset(), 4);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void setValue(byte[] content, boolean value) {

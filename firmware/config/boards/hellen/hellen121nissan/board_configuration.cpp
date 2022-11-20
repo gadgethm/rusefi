@@ -12,7 +12,7 @@
  */
 
 #include "pch.h"
-#include "custom_engine.h"
+#include "defaults.h"
 #include "hellen_meta.h"
 
 static void setInjectorPins() {
@@ -71,12 +71,10 @@ static void setupDefaultSensorInputs() {
 	// todo: this requires unit test change
 	engineConfiguration->camInputs[1 * CAMS_PER_BANK] = H144_IN_D_AUX4;
 
-	engineConfiguration->tps1_1AdcChannel = H144_IN_TPS;
-	engineConfiguration->tps1_2AdcChannel = H144_IN_AUX1;
+	setTPS1Inputs(H144_IN_TPS, H144_IN_AUX1);
 
-	engineConfiguration->throttlePedalPositionAdcChannel = H144_IN_PPS;
-	engineConfiguration->throttlePedalPositionSecondAdcChannel = EFI_ADC_14;
-	engineConfiguration->mafAdcChannel = EFI_ADC_10;
+	setPPSInputs(H144_IN_PPS, EFI_ADC_14);
+	engineConfiguration->mafAdcChannel = H144_IN_O2S;
 	engineConfiguration->map.sensor.hwChannel = H144_IN_MAP2;
 
 	engineConfiguration->afr.hwChannel = EFI_ADC_1;
@@ -84,9 +82,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->clt.adcChannel = H144_IN_CLT;
 
 	engineConfiguration->iat.adcChannel = H144_IN_IAT;
-
-	engineConfiguration->auxTempSensor1.adcChannel = EFI_ADC_NONE;
-	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
 }
 
 void setBoardConfigOverrides() {
@@ -120,8 +115,7 @@ void setBoardDefaultConfiguration() {
 	engineConfiguration->enableSoftwareKnock = true;
 	engineConfiguration->canNbcType = CAN_BUS_NBC_NONE; // none because handled by Lua!
 
-	engineConfiguration->canTxPin = Gpio::D1;
-	engineConfiguration->canRxPin = Gpio::D0;
+	setHellenCan();
 
 	engineConfiguration->fuelPumpPin = Gpio::D12;	// OUT_IO9 // 113 Fuel Pump Relay
 	engineConfiguration->idle.solenoidPin = Gpio::Unassigned;
@@ -135,8 +129,6 @@ void setBoardDefaultConfiguration() {
 	// Some sensible defaults for other options
 	setCrankOperationMode();
 
-	engineConfiguration->vvtCamSensorUseRise = true;
-	engineConfiguration->useOnlyRisingEdgeForTrigger = true;
 //	setAlgorithm(LM_SPEED_DENSITY);
     // at least this starts
 	engineConfiguration->fuelAlgorithm = LM_ALPHA_N;
@@ -162,17 +154,12 @@ void setBoardDefaultConfiguration() {
 
 	engineConfiguration->luaOutputPins[0] = Gpio::G5; // 104 ETB Relay
 
-	engineConfiguration->throttlePedalUpVoltage = 0.75;
-	engineConfiguration->throttlePedalWOTVoltage = 4.45;
-	engineConfiguration->throttlePedalSecondaryUpVoltage = 0.43;
-	engineConfiguration->throttlePedalSecondaryWOTVoltage = 2.20;
+	setPPSCalibration(0.75, 4.45, 0.43, 2.20);
 
 	engineConfiguration->startUpFuelPumpDuration = 4;
 	engineConfiguration->postCrankingFactor = 1.05;
 
-	engineConfiguration->etb.pFactor = 6.1350;
-	engineConfiguration->etb.iFactor = 87.7182;
-	engineConfiguration->etb.dFactor = 0.0702;
+    setEtbPID(6.1350, 87.7182, 0.0702);
 
 	// this calibration reminds me of VAG just flipped?
 	engineConfiguration->tpsMin = 100;

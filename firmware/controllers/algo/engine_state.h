@@ -24,6 +24,11 @@ public:
 	 */
 	angle_t engineCycle;
 
+	/**
+	 * this is based on sensorChartMode and sensorSnifferRpmThreshold settings
+	 */
+	sensor_chart_e sensorChartMode = SC_OFF;
+
 	// Per-injection fuel mass, including TPS accel enrich
 	float injectionMass[MAX_CYLINDER_COUNT] = {0};
 
@@ -56,7 +61,6 @@ public:
 	efitick_t timeSinceLastTChargeK;
 
 	float currentVe = 0;
-	float currentVeLoad = 0;
 
 	/**
 	 * Raw fuel injection duration produced by current fuel algorithm, without any correction

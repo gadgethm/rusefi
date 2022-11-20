@@ -10,10 +10,12 @@
 #include "rusefi_enums.h"
 #include "listener_array.h"
 #include "trigger_decoder.h"
+#include "instant_rpm_calculator.h"
 #include "trigger_central_generated.h"
 #include "timer.h"
 #include "pin_repository.h"
 #include "local_version_holder.h"
+#include "cyclic_buffer.h"
 
 #define MAP_CAM_BUFFER 64
 
@@ -47,25 +49,77 @@ public:
 class TriggerCentral final : public trigger_central_s {
 public:
 	TriggerCentral();
+	angle_t syncAndReport(int divider, int remainder);
 	void handleShaftSignal(trigger_event_e signal, efitick_t timestamp);
 	int getHwEventCounter(int index) const;
 	void resetCounters();
 	void validateCamVvtCounters();
+	void updateWaveform();
+
+	InstantRpmCalculator instantRpm;
+
+	void prepareTriggerShape() {
+#if EFI_ENGINE_CONTROL && EFI_SHAFT_POSITION_INPUT
+		if (triggerShape.shapeDefinitionError) {
+			// Nothing to do here if there's a problem with the trigger shape
+			return;
+		}
+
+		triggerFormDetails.prepareEventAngles(&triggerShape);
+#endif
+	}
+
+	// this is useful at least for real hardware integration testing - maybe a proper solution would be to simply
+	// GND input pins instead of leaving them floating
+	bool hwTriggerInputEnabled = true;
+
+	cyclic_buffer<int> triggerErrorDetection;
+
+	/**
+	 * See also triggerSimulatorFrequency
+	 */
+	bool directSelfStimulation = false;
+
+	PrimaryTriggerConfiguration primaryTriggerConfiguration;
+#if CAMS_PER_BANK == 1
+	VvtTriggerConfiguration vvtTriggerConfiguration[CAMS_PER_BANK] = {{"VVT1 ", 0}};
+#else
+	VvtTriggerConfiguration vvtTriggerConfiguration[CAMS_PER_BANK] = {{"VVT1 ", 0}, {"VVT2 ", 1}};
+#endif
 
 	LocalVersionHolder triggerVersion;
+
+	/**
+	 * By the way:
+	 * 'cranking' means engine is not stopped and the rpm are below crankingRpm
+	 * 'running' means RPM are above crankingRpm
+	 * 'spinning' means the engine is not stopped
+	 */
+	// todo: combine with other RpmCalculator fields?
+	/**
+	 * this is set to true each time we register a trigger tooth signal
+	 */
+	bool isSpinningJustForWatchdog = false;
 
 	angle_t mapCamPrevToothAngle = -1;
 	float mapCamPrevCycleValue = 0;
 	int prevChangeAtCycle = 0;
 
 	/**
+	 * value of 'triggerShape.getLength()'
+	 * pre-calculating this value is a performance optimization
+	 */
+	uint32_t engineCycleEventCount = 0;
+	/**
 	 * true if a recent configuration change has changed any of the trigger settings which
 	 * we have not adjusted for yet
 	 */
-	bool triggerConfigChanged = false;
+	bool triggerConfigChangedOnLastConfigurationChange = false;
 
 	bool checkIfTriggerConfigChanged();
+#if EFI_UNIT_TEST
 	bool isTriggerConfigChanged();
+#endif // EFI_UNIT_TEST
 
 	bool isTriggerDecoderError();
 
@@ -137,6 +191,11 @@ public:
 	// Keep track of the last time we got a valid trigger event
 	Timer m_lastEventTimer;
 
+	/**
+	 * this is based on engineSnifferRpmThreshold settings and current RPM
+	 */
+	bool isEngineSnifferEnabled = false;
+
 private:
 	void decodeMapCam(efitick_t nowNt, float currentPhase);
 
@@ -144,6 +203,10 @@ private:
 	Timer m_lastToothTimer;
 	// Phase of the last tooth relative to the sync point
 	float m_lastToothPhaseFromSyncPoint;
+
+	// At what engine phase do we expect the next tooth to arrive?
+	// Used for checking whether your trigger pattern is correct.
+	float expectedNextPhase;
 };
 
 void triggerInfo(void);
@@ -162,3 +225,5 @@ void onConfigurationChangeTriggerCallback();
 #define SYMMETRICAL_CRANK_SENSOR_DIVIDER 4
 #define SYMMETRICAL_THREE_TIMES_CRANK_SENSOR_DIVIDER 6
 #define SYMMETRICAL_TWELVE_TIMES_CRANK_SENSOR_DIVIDER 24
+
+TriggerCentral * getTriggerCentral();

@@ -24,6 +24,7 @@
 #include "event_registry.h"
 #include "fuel_math.h"
 #include "advance_map.h"
+#include "gppwm_channel.h"
 
 #if EFI_UNIT_TEST
 extern bool verboseMode;
@@ -35,7 +36,7 @@ angle_t wrapAngleMethod(angle_t param, const char *msg, obd_code_e code) {
 }
 
 floatms_t getEngineCycleDuration(int rpm) {
-	return getCrankshaftRevolutionTimeMs(rpm) * (engine->getOperationMode() == TWO_STROKE ? 1 : 2);
+	return getCrankshaftRevolutionTimeMs(rpm) * (getEngineRotationState()->getOperationMode() == TWO_STROKE ? 1 : 2);
 }
 
 /**
@@ -49,11 +50,11 @@ floatms_t getCrankshaftRevolutionTimeMs(int rpm) {
 }
 
 float getFuelingLoad() {
-	return engine->engineState.fuelingLoad;
+	return getEngineState()->fuelingLoad;
 }
 
 float getIgnitionLoad() {
-	return engine->engineState.ignitionLoad;
+	return getEngineState()->ignitionLoad;
 }
 
 /**
@@ -375,40 +376,6 @@ size_t getNextFiringCylinderId(size_t prevCylinderId) {
 }
 
 /**
- * @param cylinderIndex from 0 to cylinderCount, not cylinder number
- */
-static int getIgnitionPinForIndex(int cylinderIndex) {
-	switch (getCurrentIgnitionMode()) {
-	case IM_ONE_COIL:
-		return 0;
-	case IM_WASTED_SPARK: {
-		if (engineConfiguration->specs.cylindersCount == 1) {
-			// we do not want to divide by zero
-			return 0;
-		}
-		return cylinderIndex % (engineConfiguration->specs.cylindersCount / 2);
-	}
-	case IM_INDIVIDUAL_COILS:
-		return cylinderIndex;
-	case IM_TWO_COILS:
-		return cylinderIndex % 2;
-
-	default:
-		firmwareError(CUSTOM_OBD_IGNITION_MODE, "Invalid ignition mode getIgnitionPinForIndex(): %d", engineConfiguration->ignitionMode);
-		return 0;
-	}
-}
-
-void prepareIgnitionPinIndices(ignition_mode_e ignitionMode) {
-	(void)ignitionMode;
-#if EFI_ENGINE_CONTROL
-	for (size_t cylinderIndex = 0; cylinderIndex < engineConfiguration->specs.cylindersCount; cylinderIndex++) {
-		engine->ignitionPin[cylinderIndex] = getIgnitionPinForIndex(cylinderIndex);
-	}
-#endif /* EFI_ENGINE_CONTROL */
-}
-
-/**
  * @return IM_WASTED_SPARK if in SPINNING mode and IM_INDIVIDUAL_COILS setting
  * @return engineConfiguration->ignitionMode otherwise
  */
@@ -416,7 +383,8 @@ ignition_mode_e getCurrentIgnitionMode() {
 	ignition_mode_e ignitionMode = engineConfiguration->ignitionMode;
 #if EFI_SHAFT_POSITION_INPUT
 	// In spin-up cranking mode we don't have full phase sync info yet, so wasted spark mode is better
-	if (ignitionMode == IM_INDIVIDUAL_COILS) {
+	// However, only do this on even cylinder count engines: odd cyl count doesn't fire at all
+	if (ignitionMode == IM_INDIVIDUAL_COILS && (engineConfiguration->specs.cylindersCount % 2 == 0)) {
 		bool missingPhaseInfoForSequential = 
 			!engine->triggerCentral.triggerState.hasSynchronizedPhase();
 
@@ -434,27 +402,15 @@ ignition_mode_e getCurrentIgnitionMode() {
  * This heavy method is only invoked in case of a configuration change or initialization.
  */
 void prepareOutputSignals() {
-	engine->engineState.engineCycle = getEngineCycle(engine->getOperationMode());
-
-	angle_t maxTimingCorrMap = -FOUR_STROKE_CYCLE_DURATION;
-	angle_t maxTimingMap = -FOUR_STROKE_CYCLE_DURATION;
-	for (int rpmIndex = 0;rpmIndex<IGN_RPM_COUNT;rpmIndex++) {
-		for (int l = 0;l<IGN_LOAD_COUNT;l++) {
-			maxTimingCorrMap = maxF(maxTimingCorrMap, config->ignitionIatCorrTable[l][rpmIndex]);
-			maxTimingMap = maxF(maxTimingMap, config->ignitionTable[l][rpmIndex]);
-		}
-	}
+	getEngineState()->engineCycle = getEngineCycle(getEngineRotationState()->getOperationMode());
 
 #if EFI_UNIT_TEST
 	if (verboseMode) {
-		printf("prepareOutputSignals %d onlyEdge=%s %s\r\n", engineConfiguration->trigger.type, boolToString(engineConfiguration->useOnlyRisingEdgeForTrigger),
-				getIgnition_mode_e(engineConfiguration->ignitionMode));
+		printf("prepareOutputSignals %d %s\r\n", engineConfiguration->trigger.type, getIgnition_mode_e(engineConfiguration->ignitionMode));
 	}
 #endif /* EFI_UNIT_TEST */
 
-	prepareIgnitionPinIndices(engineConfiguration->ignitionMode);
-
-	TRIGGER_WAVEFORM(prepareShape(engine->triggerCentral.triggerFormDetails));
+	engine->triggerCentral.prepareTriggerShape();
 
 	// Fuel schedule may now be completely wrong, force a reset
 	engine->injectionEvents.invalidate();
@@ -492,6 +448,29 @@ void setAlgorithm(engine_load_mode_e algo) {
 
 void setFlatInjectorLag(float value) {
 	setArrayValues(engineConfiguration->injector.battLagCorr, value);
+}
+
+BlendResult calculateBlend(blend_table_s& cfg, float rpm, float load) {
+	// If set to 0, skip the math as its disabled
+	if (cfg.blendParameter == GPPWM_Zero) {
+		return { 0, 0 };
+	}
+
+	auto value = readGppwmChannel(cfg.blendParameter);
+
+	if (!value) {
+		return { 0, 0 };
+	}
+
+	float tableValue = interpolate3d(
+		cfg.table,
+		cfg.loadBins, load,
+		cfg.rpmBins, rpm
+	);
+
+	float blendFactor = interpolate2d(value.Value, cfg.blendBins, cfg.blendValues);
+
+	return { blendFactor, 0.01f * blendFactor * tableValue };
 }
 
 #endif /* EFI_ENGINE_CONTROL */

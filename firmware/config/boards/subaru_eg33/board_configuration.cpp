@@ -207,14 +207,6 @@ void setBoardDefaultConfiguration() {
 	engineConfiguration->knockBankCyl5 = 0;
 	engineConfiguration->knockBankCyl6 = 1;
 
-	/* Cylinder to bank mapping */
-	engineConfiguration->cylinderBankSelect[1 - 1] = 0;
-	engineConfiguration->cylinderBankSelect[2 - 1] = 1;
-	engineConfiguration->cylinderBankSelect[3 - 1] = 0;
-	engineConfiguration->cylinderBankSelect[4 - 1] = 1;
-	engineConfiguration->cylinderBankSelect[5 - 1] = 0;
-	engineConfiguration->cylinderBankSelect[6 - 1] = 1;
-
 	/* Misc settings */
 	engineConfiguration->acSwitch = Gpio::MC33972_PIN_22;
 	engineConfiguration->acSwitchMode = PI_DEFAULT;
@@ -233,10 +225,8 @@ void setBoardDefaultConfiguration() {
 	/* not used pins with testpads */
 	engineConfiguration->triggerSimulatorPins[0] = Gpio::H2;
 	engineConfiguration->triggerSimulatorPins[1] = Gpio::H3;
-	engineConfiguration->triggerSimulatorPins[2] = Gpio::H4;
 	engineConfiguration->triggerSimulatorPinModes[0] = OM_DEFAULT;
 	engineConfiguration->triggerSimulatorPinModes[1] = OM_DEFAULT;
-	engineConfiguration->triggerSimulatorPinModes[2] = OM_DEFAULT;
 
 	if (engineConfiguration->fuelAlgorithm == LM_REAL_MAF)
 		setAlgorithm(LM_SPEED_DENSITY);

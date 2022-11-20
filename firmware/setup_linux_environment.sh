@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
 # it's totally possible to develop on Windows. Also WSL is amazing!
@@ -20,20 +20,14 @@
 # delete any old tools, create a new folder, and go there
 rm -rf ~/.rusefi-tools
 mkdir ~/.rusefi-tools
+dir=$(pwd)
 cd ~/.rusefi-tools
 
-# in case not first execution
-rm -rf arm-none-eabi-gcc.tar.bz2
-
-# Download and extract GCC compiler
-curl -L -o arm-none-eabi-gcc.tar.bz2 https://developer.arm.com/-/media/Files/downloads/gnu-rm/9-2020q2/gcc-arm-none-eabi-9-2020-q2-update-x86_64-linux.tar.bz2
-tar -xjvf arm-none-eabi-gcc.tar.bz2
-
-# Delete downloaded image
-rm arm-none-eabi-gcc.tar.bz2
+# provide GCC arm-none-eabi toolchain
+${dir}/provide_gcc.sh
 
 # Add the compiler to your path
-echo 'export PATH=$PATH:$HOME/.rusefi-tools/gcc-arm-none-eabi-9-2020-q2-update/bin' >> ~/.profile
+echo 'export PATH=$PATH:$HOME/.rusefi-tools/gcc-arm-none-eabi/bin' >> ~/.profile
 
 # Source the .profile file to reload path
 source ~/.profile

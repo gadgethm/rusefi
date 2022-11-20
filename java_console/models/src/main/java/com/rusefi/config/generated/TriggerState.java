@@ -1,6 +1,6 @@
 package com.rusefi.config.generated;
 
-// this file was generated automatically by rusEFI tool ConfigDefinition.jar based on (unknown script) controllers/trigger/trigger_state.txt Sun Sep 11 05:06:59 UTC 2022
+// this file was generated automatically by rusEFI tool ConfigDefinition.jar based on (unknown script) controllers/trigger/trigger_state.txt Tue Nov 15 04:45:57 UTC 2022
 
 // by class com.rusefi.output.FileJavaFieldsConsumer
 import com.rusefi.config.*;
@@ -14,12 +14,13 @@ public class TriggerState {
 	public static final int AUX_DIGITAL_VALVE_COUNT = 2;
 	public static final int BANKS_COUNT = 2;
 	public static final int BARO_CORR_SIZE = 4;
-	public static final int BLOCKING_FACTOR = 500;
+	public static final int BLOCKING_FACTOR = 750;
 	public static final int BOOST_LOAD_COUNT = 8;
 	public static final int BOOST_RPM_COUNT = 8;
 	public static final int CAM_INPUTS_COUNT = 4;
 	public static final int CAMS_PER_BANK = 2;
 	public static final int CAN_DEFAULT_BASE = 0x200;
+	public static final int CAN_ECU_HW_META = 0xAB1234;
 	public static final int CAN_ECU_SERIAL_RX_ID = 0x100;
 	public static final int CAN_ECU_SERIAL_TX_ID = 0x102;
 	public static final String CAN_RX_PREFIX = "CAN_rx";
@@ -99,7 +100,7 @@ public class TriggerState {
 	public static final int ETB_BIAS_CURVE_LENGTH = 8;
 	public static final int ETB_COUNT = 2;
 	public static final int ETB_HW_MAX_FREQUENCY = 3000;
-	public static final int FLASH_DATA_VERSION = 10014;
+	public static final int FLASH_DATA_VERSION = 10015;
 	public static final int FUEL_LEVEL_TABLE_COUNT = 8;
 	public static final int FUEL_LOAD_COUNT = 16;
 	public static final int FUEL_RPM_COUNT = 16;
@@ -113,10 +114,11 @@ public class TriggerState {
 	public static final String GAUGE_NAME_AFR = "Air/Fuel Ratio";
 	public static final String GAUGE_NAME_AFR2 = "Air/Fuel Ratio 2";
 	public static final String GAUGE_NAME_AIR_FLOW_ESTIMATE = "MAF estimate";
-	public static final String GAUGE_NAME_AIR_FLOW_MEASURED = "MAF sensor";
+	public static final String GAUGE_NAME_AIR_FLOW_MEASURED = "MAF";
+	public static final String GAUGE_NAME_AIR_FLOW_MEASURED_2 = "MAF #2";
 	public static final String GAUGE_NAME_AIR_MASS = "air mass";
-	public static final String GAUGE_NAME_AUX_LINEAR_1 = "Aux Linear 1";
-	public static final String GAUGE_NAME_AUX_LINEAR_2 = "Aux Linear 2";
+	public static final String GAUGE_NAME_AUX_LINEAR_1 = "Aux Linear #1";
+	public static final String GAUGE_NAME_AUX_LINEAR_2 = "Aux Linear #2";
 	public static final String GAUGE_NAME_AUX_TEMP1 = "Aux temp 1";
 	public static final String GAUGE_NAME_AUX_TEMP2 = "Aux temp 2";
 	public static final String GAUGE_NAME_BARO_PRESSURE = "Barometric pressure";
@@ -148,7 +150,7 @@ public class TriggerState {
 	public static final String GAUGE_NAME_ETB_ERROR = "ETB position error";
 	public static final String GAUGE_NAME_ETB_TARGET = "ETB position target";
 	public static final String GAUGE_NAME_FLEX = "Flex Ethanol %";
-	public static final String GAUGE_NAME_FUEL_BARO_CORR = "fuel: Barometric pressure correction";
+	public static final String GAUGE_NAME_FUEL_BARO_CORR = "fuel: Barometric pressure mult";
 	public static final String GAUGE_NAME_FUEL_BASE = "fuel: base mass";
 	public static final String GAUGE_NAME_FUEL_CHARGE_TEMP = "fuel: Estimated charge temperature";
 	public static final String GAUGE_NAME_FUEL_CLT_CORR = "fuel: CLT correction";
@@ -166,7 +168,7 @@ public class TriggerState {
 	public static final String GAUGE_NAME_FUEL_PRESSURE_LOW = "Fuel pressure (low)";
 	public static final String GAUGE_NAME_FUEL_PRESSURE_LOW_UNITS = "kPa";
 	public static final String GAUGE_NAME_FUEL_RUNNING = "fuel: running";
-	public static final String GAUGE_NAME_FUEL_TPS_EXTRA = "fuel: TPS acceleration extra fuel ms";
+	public static final String GAUGE_NAME_FUEL_TPS_EXTRA = "fuel: TPS acceleration add fuel ms";
 	public static final String GAUGE_NAME_FUEL_TPS_ROC = "fuel: TPS change";
 	public static final String GAUGE_NAME_FUEL_TRIM = "fuel: fuel trim";
 	public static final String GAUGE_NAME_FUEL_TRIM_2 = "fuel: fuel trim 2";
@@ -249,6 +251,7 @@ public class TriggerState {
 	public static final int IAT_CURVE_SIZE = 16;
 	public static final int IDLE_ADVANCE_CURVE_SIZE = 8;
 	public static final int IDLE_VE_SIZE = 4;
+	public static final int IGN_BLEND_COUNT = 4;
 	public static final int IGN_LOAD_COUNT = 16;
 	public static final int IGN_RPM_COUNT = 16;
 	public static final String INDICATOR_NAME_AC_SWITCH = "AC switch";
@@ -259,6 +262,7 @@ public class TriggerState {
 	public static final String LOG_DELIMITER = "`";
 	public static final int LOGIC_ANALYZER_CHANNEL_COUNT = 4;
 	public static final int LUA_ANALOG_INPUT_COUNT = 8;
+	public static final int LUA_GAUGE_COUNT = 2;
 	public static final int LUA_PWM_COUNT = 8;
 	public static final int LUA_SCRIPT_SIZE = 8000;
 	public static final int MAF_DECODING_COUNT = 256;
@@ -318,6 +322,7 @@ public class TriggerState {
 	public static final int SCRIPT_SETTING_COUNT = 8;
 	public static final int SCRIPT_TABLE_8 = 8;
 	public static final int SCRIPT_TABLE_COUNT = 4;
+	public static final int SENT_INPUT_COUNT = 1;
 	public static final int STFT_BANK_COUNT = 2;
 	public static final int STFT_CELL_COUNT = 4;
 	public static final int TCU_GEAR_COUNT = 10;
@@ -331,6 +336,7 @@ public class TriggerState {
 	public static final int TPS_2_BYTE_PACKING_MULT = 100;
 	public static final int TPS_TPS_ACCEL_TABLE = 8;
 	public static final String TRIGGER_COMMENT = "#";
+	public static final String TRIGGER_CYCLE_DURATION = "cycleDuration";
 	public static final String TRIGGER_GAP_FROM = "gapFrom";
 	public static final String TRIGGER_GAP_TO = "gapTo";
 	public static final String TRIGGER_GAPS_COUNT = "gapsCount";
@@ -339,7 +345,7 @@ public class TriggerState {
 	public static final int TRIGGER_INPUT_PIN_COUNT = 2;
 	public static final String TRIGGER_IS_CRANK_KEY = "crankBased";
 	public static final String TRIGGER_IS_SECOND_WHEEL_CAM = "isSecondWheelCam";
-	public static final int TRIGGER_SIMULATOR_PIN_COUNT = 3;
+	public static final int TRIGGER_SIMULATOR_PIN_COUNT = 2;
 	public static final String TRIGGERS_FILE_NAME = "triggers.txt";
 	public static final int TRIM_SIZE = 4;
 	public static final int TS_BLOCK_READ_TIMEOUT = 3000;
@@ -381,6 +387,7 @@ public class TriggerState {
 	public static final char TS_SINGLE_WRITE_COMMAND = 'W';
 	public static final char TS_TEST_COMMAND = 't';
 	public static final int VBAT_INJECTOR_CURVE_SIZE = 8;
+	public static final int VE_BLEND_COUNT = 4;
 	public static final int VEHICLE_INFO_SIZE = 32;
 	public static final int VIN_NUMBER_SIZE = 17;
 	public static final int VM_VVT_INACTIVE = 0;

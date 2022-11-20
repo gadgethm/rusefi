@@ -11,6 +11,7 @@
 
 #include "efifeatures.h"
 #include "rusefi_types.h"
+#include "global.h"
 
 #if EFI_PROD_CODE
 // for US_TO_NT_MULTIPLIER which is port-specific
@@ -27,9 +28,9 @@
 #define US2MS(US_TIME) ((US_TIME) / 1000)
 
 // microseconds to ticks
-// since only about 20 seconds of ticks fit in 32 bits this macro is casting parameter into 64 bits 'efitime_t' type
+// since only about 20 seconds of ticks fit in 32 bits this macro is casting parameter into 64 bits 'efitick_t' type
 // please note that int64 <-> float is a heavy operation thus we have 'USF2NT' below
-#define US2NT(us) (((efitime_t)(us)) * US_TO_NT_MULTIPLIER)
+#define US2NT(us) (((efitick_t)(us)) * US_TO_NT_MULTIPLIER)
 
 // microseconds to ticks, but floating point
 // If converting a floating point time period, use this macro to avoid

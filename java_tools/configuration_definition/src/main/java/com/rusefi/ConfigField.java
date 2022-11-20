@@ -1,8 +1,10 @@
 package com.rusefi;
 
 import com.devexperts.logging.Logging;
+import com.opensr5.ini.field.EnumIniField;
 import com.rusefi.core.Pair;
 import com.rusefi.output.ConfigStructure;
+import com.rusefi.output.DataLogConsumer;
 import com.rusefi.output.JavaFieldsConsumer;
 
 import java.util.Arrays;
@@ -12,6 +14,8 @@ import java.util.regex.Pattern;
 
 import static com.devexperts.logging.Logging.getLogging;
 import static com.rusefi.output.JavaSensorsConsumer.quote;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This is an immutable model of an individual field
@@ -31,9 +35,6 @@ public class ConfigField {
 
     private static final Pattern DIRECTIVE = Pattern.compile("#(if\\s" + namePattern + "|else|elif\\s\" + namePattern + \"|endif)");
 
-    // we used to have a weird feature of only handing comments starting with + as tooltips
-    // very unclear what was the value of it. todo; remove all of those and kill this tag?
-    public static final char TS_COMMENT_TAG = '+';
     public static final String VOID_NAME = "";
     public static final String BOOLEAN_T = "boolean";
     public static final String DIRECTIVE_T = "directive";
@@ -52,6 +53,8 @@ public class ConfigField {
     private final String trueName;
     private final String falseName;
     private boolean isFromIterate;
+    private String iterateOriginalName;
+    private int iterateIndex;
 
     /**
      * todo: one day someone should convert this into a builder
@@ -62,7 +65,7 @@ public class ConfigField {
                        String arraySizeAsText,
                        String type,
                        int[] arraySizes,
-                       String tsInfo,
+                       @Nullable String tsInfo,
                        boolean isIterate,
                        boolean fsioVisible,
                        boolean hasAutoscale,
@@ -162,6 +165,7 @@ public class ConfigField {
         }
 
         String comment = matcher.group(10);
+        validateComment(comment);
         String type = matcher.group(1);
         int[] arraySizes;
         String arraySizeAsText;
@@ -193,6 +197,16 @@ public class ConfigField {
             log.debug("comment " + comment);
 
         return field;
+    }
+
+    private static void validateComment(String comment) {
+        if (comment == null)
+            return;
+        comment = comment.trim();
+        if (comment.isEmpty())
+            return;
+        if (comment.charAt(0) == '"' && !EnumIniField.isQuoted(comment))
+            throw new MaybeSemicolorWasMissedException("This comment looks like semicolon was missed: " + comment);
     }
 
     public static boolean isPreprocessorDirective(String line) {
@@ -227,7 +241,7 @@ public class ConfigField {
     public String getCommentContent() {
         if (comment == null || comment.isEmpty())
             return comment;
-        return (comment.charAt(0) == TS_COMMENT_TAG ? comment.substring(1) : comment).trim();
+        return comment.trim();
     }
 
     public int[] getArraySizes() {
@@ -363,29 +377,37 @@ public class ConfigField {
     public int getDigits() {
         String[] tokens = getTokens();
         if (tokens.length < 6)
-            return -1;
+            return 0;
         return Integer.parseInt(tokens[5].trim());
     }
 
     // see testUnquote
     public static String unquote(String token) {
-        int length = token.length();
-        if (length < 2)
-            return token;
-        if (token.charAt(0) == '\"' && token.charAt(token.length() - 1) == '\"')
-            return token.substring(1, length - 1);
-        return token;
+        return VariableRegistry.unquote(token);
     }
 
-    public void isFromIterate(boolean isFromIterate) {
-        this.isFromIterate = isFromIterate;
+    public void setFromIterate(String iterateOriginalName, int iterateIndex) {
+        this.iterateOriginalName = iterateOriginalName;
+        this.iterateIndex = iterateIndex;
+        this.isFromIterate = true;
+    }
+
+    public String getIterateOriginalName() {
+        return iterateOriginalName;
+    }
+
+    public int getIterateIndex() {
+        return iterateIndex;
     }
 
     public boolean isFromIterate() {
         return isFromIterate;
     }
 
-    // todo: find more usages for this method?
+    /**
+     * todo: find more usages for this method?
+     * @see DataLogConsumer.getComment
+     */
     public String getCommentOrName() {
         if (comment == null || comment.trim().isEmpty())
             return quote(name);

@@ -4,11 +4,13 @@
 #include "redundant_sensor.h"
 #include "redundant_ford_tps.h"
 #include "fallback_sensor.h"
+#include "frequency_sensor.h"
 #include "Lps25Sensor.h"
 #include "linear_func.h"
 #include "resistance_func.h"
 #include "thermistor_func.h"
 #include "identity_func.h"
+#include "map_averaging.h"
 
 void ProxySensor::showInfo(const char* sensorName) const {
 	efiPrintf("Sensor \"%s\" proxied from sensor \"%s\"", sensorName, getSensorName(m_proxiedSensor));
@@ -37,6 +39,10 @@ void RedundantSensor::showInfo(const char* sensorName) const {
 	efiPrintf("Sensor \"%s\" is redundant combining \"%s\" and \"%s\"", sensorName, getSensorName(m_first), getSensorName(m_second));
 }
 
+void FrequencySensor::showInfo(const char* sensorName) const {
+	efiPrintf("FrequencySensor \"%s\" counter %d", sensorName, eventCounter);
+}
+
 void RedundantFordTps::showInfo(const char* sensorName) const {
 	efiPrintf("Sensor \"%s\" is Ford-type redundant TPS combining \"%s\" and \"%s\"", sensorName, getSensorName(m_first), getSensorName(m_second));
 }
@@ -59,6 +65,11 @@ void RpmCalculator::showInfo(const char* /*sensorName*/) const {
 
 void Lps25Sensor::showInfo(const char* sensorName) const {
 	efiPrintf("%s: LPS25 baro %.2f kPa", sensorName, get().Value);
+}
+
+void MapAverager::showInfo(const char* sensorName) const {
+	const auto value = get();
+	efiPrintf("Sensor \"%s\" is MAP averager: valid: %s value: %.2f averaged sample count: %d", sensorName, boolToString(value.Valid), value.Value, m_lastCounter);
 }
 
 void LinearFunc::showInfo(float testRawValue) const {

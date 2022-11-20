@@ -41,6 +41,7 @@
 #include "gps_uart.h"
 #include "HD44780.h"
 #include "joystick.h"
+#include "sent.h"
 #include "cdm_ion_sense.h"
 #include "trigger_central.h"
 #include "svnversion.h"
@@ -69,10 +70,6 @@
 #include "can_vss.h"
 #endif
 
-/**
- * #311 we want to test RTC before engine start so that we do not test it while engine is running
- */
-bool rtcWorks = true;
 #if HAL_USE_SPI
 extern bool isSpiInitialized[5];
 
@@ -180,7 +177,7 @@ void onFastAdcComplete(adcsample_t*) {
 	efiAssertVoid(CUSTOM_STACK_ADC, getCurrentRemainingStack() > 128, "lowstck#9b");
 
 #if EFI_SENSOR_CHART && EFI_SHAFT_POSITION_INPUT
-	if (engine->sensorChartMode == SC_AUX_FAST1) {
+	if (getEngineState()->sensorChartMode == SC_AUX_FAST1) {
 		float voltage = getAdcValue("fAux1", engineConfiguration->auxFastSensor1_adcChannel);
 		scAddData(engine->triggerCentral.getCurrentEnginePhase(getTimeNowNt()).value_or(0), voltage);
 	}
@@ -212,12 +209,6 @@ static void adcConfigListener(Engine *engine) {
 	UNUSED(engine);
 	// todo: something is not right here - looks like should be a callback for each configuration change?
 	calcFastAdcIndexes();
-}
-
-static void turnOnHardware() {
-#if EFI_PROD_CODE && EFI_SHAFT_POSITION_INPUT
-	turnOnTriggerInputPins();
-#endif /* EFI_SHAFT_POSITION_INPUT */
 }
 
 void stopSpi(spi_device_e device) {
@@ -256,6 +247,9 @@ void applyNewHardwareSettings() {
 	stopTriggerInputPins();
 #endif /* EFI_SHAFT_POSITION_INPUT */
 
+#if EFI_SENT_SUPPORT
+	stopSent();
+#endif // EFI_SENT_SUPPORT
 
 #if (HAL_USE_PAL && EFI_JOYSTICK)
 	stopJoystickPins();
@@ -371,6 +365,10 @@ void applyNewHardwareSettings() {
 	startVvtControlPins();
 #endif /* EFI_AUX_PID */
 
+#if EFI_SENT_SUPPORT
+	startSent();
+#endif
+
 	adcConfigListener(engine);
 }
 
@@ -405,10 +403,12 @@ void initHardwareNoConfig() {
 	initHistogramsModule();
 #endif /* EFI_HISTOGRAMS */
 
+#if EFI_GPIO_HARDWARE
 	/**
 	 * We need the LED_ERROR pin even before we read configuration
 	 */
 	initPrimaryPins();
+#endif // EFI_GPIO_HARDWARE
 
 #if EFI_PROD_CODE
 	// it's important to initialize this pretty early in the game before any scheduling usages
@@ -555,7 +555,9 @@ void initHardware() {
 //	init_adc_mcp3208(&adcState, &SPID2);
 //	requestAdcValue(&adcState, 0);
 
-	turnOnHardware();
+#if EFI_PROD_CODE && EFI_SHAFT_POSITION_INPUT
+	turnOnTriggerInputPins();
+#endif /* EFI_SHAFT_POSITION_INPUT */
 
 #if EFI_HIP_9011
 	initHip9011();
@@ -588,6 +590,10 @@ void initHardware() {
 #if (HAL_USE_PAL && EFI_JOYSTICK)
 	initJoystick();
 #endif /* HAL_USE_PAL && EFI_JOYSTICK */
+
+#if EFI_SENT_SUPPORT
+	initSent();
+#endif
 
 	calcFastAdcIndexes();
 

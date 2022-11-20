@@ -1,6 +1,6 @@
 #include "global.h"
 #include "rusefi_enums.h"
-// was generated automatically by rusEFI tool  from rusefi_enums.h // by enum2string.jar tool on Sun Sep 11 07:52:24 UTC 2022
+// was generated automatically by rusEFI tool  from rusefi_enums.h // by enum2string.jar tool on Fri Oct 21 02:29:53 UTC 2022
 // see also gen_config_and_enums.bat
 
 
@@ -29,6 +29,8 @@ case InjectionTimingMode::Start:
 }
 const char *getInjectorNonlinearMode(InjectorNonlinearMode value){
 switch(value) {
+case INJ_FordModel:
+  return "INJ_FordModel";
 case INJ_None:
   return "INJ_None";
 case INJ_PolynomialAdder:
@@ -356,22 +358,48 @@ const char *getGppwm_channel_e(gppwm_channel_e value){
 switch(value) {
 case GPPWM_AccelPedal:
   return "GPPWM_AccelPedal";
+case GPPWM_AuxLinear1:
+  return "GPPWM_AuxLinear1";
+case GPPWM_AuxLinear2:
+  return "GPPWM_AuxLinear2";
 case GPPWM_AuxTemp1:
   return "GPPWM_AuxTemp1";
 case GPPWM_AuxTemp2:
   return "GPPWM_AuxTemp2";
 case GPPWM_Clt:
   return "GPPWM_Clt";
+case GPPWM_EthanolPercent:
+  return "GPPWM_EthanolPercent";
 case GPPWM_FuelLoad:
   return "GPPWM_FuelLoad";
+case GPPWM_GppwmOutput1:
+  return "GPPWM_GppwmOutput1";
+case GPPWM_GppwmOutput2:
+  return "GPPWM_GppwmOutput2";
+case GPPWM_GppwmOutput3:
+  return "GPPWM_GppwmOutput3";
+case GPPWM_GppwmOutput4:
+  return "GPPWM_GppwmOutput4";
 case GPPWM_Iat:
   return "GPPWM_Iat";
 case GPPWM_IgnLoad:
   return "GPPWM_IgnLoad";
+case GPPWM_LuaGauge1:
+  return "GPPWM_LuaGauge1";
+case GPPWM_LuaGauge2:
+  return "GPPWM_LuaGauge2";
 case GPPWM_Map:
   return "GPPWM_Map";
 case GPPWM_Tps:
   return "GPPWM_Tps";
+case GPPWM_VVT_1E:
+  return "GPPWM_VVT_1E";
+case GPPWM_VVT_1I:
+  return "GPPWM_VVT_1I";
+case GPPWM_VVT_2E:
+  return "GPPWM_VVT_2E";
+case GPPWM_VVT_2I:
+  return "GPPWM_VVT_2I";
 case GPPWM_Vbatt:
   return "GPPWM_Vbatt";
 case GPPWM_Zero:
@@ -701,8 +729,10 @@ case VVT_FIRST_HALF:
   return "VVT_FIRST_HALF";
 case VVT_FORD_ST170:
   return "VVT_FORD_ST170";
-case VVT_HONDA_K:
-  return "VVT_HONDA_K";
+case VVT_HONDA_K_EXHAUST:
+  return "VVT_HONDA_K_EXHAUST";
+case VVT_HONDA_K_INTAKE:
+  return "VVT_HONDA_K_INTAKE";
 case VVT_INACTIVE:
   return "VVT_INACTIVE";
 case VVT_MAP_V_TWIN:

@@ -18,6 +18,7 @@
 
 #include "buffered_writer.h"
 #include "status_loop.h"
+#include "binary_logging.h"
 
 static bool fs_ready = false;
 
@@ -147,7 +148,7 @@ static void incLogFileName() {
 		if (result < 5) {
             data[result] = 0;
 			logFileIndex = maxI(MIN_FILE_INDEX, atoi(data));
-			if (absI(logFileIndex) == ERROR_CODE) {
+			if (absI(logFileIndex) == ATOI_ERROR_CODE) {
 				logFileIndex = MIN_FILE_INDEX;
 			} else {
 				logFileIndex++; // next file would use next file name
@@ -532,7 +533,7 @@ static THD_FUNCTION(MMCmonThread, arg) {
 			engine->outputChannels.debugIntField4 = fileCreatedCounter;
 		}
 
-		writeLogLine(logBuffer);
+		writeSdLogLine(logBuffer);
 
 		// Something went wrong (already handled), so cancel further writes
 		if (logBuffer.failed) {

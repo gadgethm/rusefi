@@ -11,19 +11,48 @@ Release template (copy/paste this for new release):
 ## Month 202x Release - "Release Name"
 
 ### Breaking Changes
- -   
+ - 
 
 ### Added
- -   
+ -
 
 ### Fixed
- -   
+ - 
+
+### Removed
+ - 
 
  -->
 
 # Changelog
 
 ## Unreleased
+
+## November 2022 Release - "Day 267"
+
+### Added
+ - VVT minimum RPM setting #4545
+ - Fuel/spark cut codes to TS indicators #4592
+ - Flexible ignition and VE adder/trim tables #4586 #4640
+ - Enforce board configuration overrides more strictly #4614
+ - rusEFI console Startup Frame should scan for available hardware #4633
+ - Don't fire the engine without the ignition on (avoids USB keeping engine alive after ignition off) #4474
+ - Lua: function to access VIN setting #3967
+ - Lua: designated Lua gauges with logging #4672
+ - GCC11 is the suggested compiler now, GCC9 no longer supported #4680
+ - Add fuel adder to launch #4777
+ - 3-cylinder Benelli trigger
+
+### Fixed
+ - Fuel Priming reset fix #4627
+ - Slower than expected RPM information was slowing engine start #4629
+ - Fix 36-2-1 trigger (Mitsubishi 4B11, etc) #4635
+
+### Removed
+ - Idle timing deadzone #4729
+ - "Use only rising edge" trigger option - triggers now select automatically based on trigger type #4621
+
+## September 2022 Release - "Day 203"
 
 ### Added
  - Time delay before DFCO #4292
@@ -40,6 +69,7 @@ Release template (copy/paste this for new release):
  - STM32Bootloader driver install from console requests elevation #4313
  - VQ trigger gaps improvement #4469
  - Injection Offset for skipped wheel triggers #4536
+ - Randomly hanging for a complete second #4557
 
 ### Removed
  - Alternator on/off mode #4548

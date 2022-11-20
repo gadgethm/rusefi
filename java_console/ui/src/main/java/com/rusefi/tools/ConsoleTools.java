@@ -14,6 +14,7 @@ import com.rusefi.config.generated.Fields;
 import com.rusefi.core.EngineState;
 import com.rusefi.core.Pair;
 import com.rusefi.core.ResponseBuffer;
+import com.rusefi.core.SignatureHelper;
 import com.rusefi.io.ConnectionStateListener;
 import com.rusefi.io.ConnectionStatusLogic;
 import com.rusefi.io.IoStream;
@@ -162,7 +163,7 @@ public class ConsoleTools {
 
     private static void printCrc(ConfigurationImage image) {
         for (int i = 0; i < Fields.ERROR_BUFFER_SIZE; i++)
-            image.getContent()[Fields.warning_message_offset + i] = 0;
+            image.getContent()[Fields.WARNING_MESSAGE.getOffset() + i] = 0;
         int crc32 = getCrc32(image.getContent());
         int crc16 = crc32 & 0xFFFF;
         System.out.printf("tune_CRC32_hex=0x%x\n", crc32);

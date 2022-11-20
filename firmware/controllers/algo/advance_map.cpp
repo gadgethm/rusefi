@@ -23,6 +23,7 @@
 #include "advance_map.h"
 #include "idle_thread.h"
 #include "launch_control.h"
+#include "gppwm_channel.h"
 
 #if EFI_ENGINE_CONTROL
 
@@ -44,11 +45,22 @@ static angle_t getRunningAdvance(int rpm, float engineLoad) {
 
 	efiAssert(CUSTOM_ERR_ASSERT, !cisnan(engineLoad), "invalid el", NAN);
 
+	// compute base ignition angle from main table
 	float advanceAngle = interpolate3d(
 		config->ignitionTable,
 		config->ignitionLoadBins, engineLoad,
 		config->ignitionRpmBins, rpm
 	);
+
+	// Add any adjustments if configured
+	for (size_t i = 0; i < efi::size(config->ignBlends); i++) {
+		auto result = calculateBlend(config->ignBlends[i], rpm, engineLoad);
+
+		engine->outputChannels.ignBlendBias[i] = result.Bias;
+		engine->outputChannels.ignBlendOutput[i] = result.Value;
+
+		advanceAngle += result.Value;
+	}
 
 	// get advance from the separate table for Idle
 	if (engineConfiguration->useSeparateAdvanceForIdle &&
@@ -92,7 +104,7 @@ angle_t getAdvanceCorrections(int rpm) {
 		);
 	}
 
-	float instantRpm = engine->triggerCentral.triggerState.getInstantRpm();
+	float instantRpm = engine->triggerCentral.instantRpm.getInstantRpm();
 
 	engine->engineState.timingPidCorrection = engine->module<IdleController>()->getIdleTimingAdjustment(instantRpm);
 

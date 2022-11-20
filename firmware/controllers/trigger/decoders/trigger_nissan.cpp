@@ -16,9 +16,7 @@
  * 8,2,2,2 Nissan pattern
  */
 void initializeNissanSR20VE_4(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
-	s->gapBothDirections = true;
-	s->useOnlyPrimaryForSync = true;
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::Both);
 
 	s->tdcPosition = 630;
 
@@ -26,29 +24,29 @@ void initializeNissanSR20VE_4(TriggerWaveform *s) {
 
 	float width = 4;
 
-	s->addEvent720(1 * 180 - 4 * width, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent720(1 * 180, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent720(1 * 180 - 4 * width, TriggerValue::RISE);
+	s->addEvent720(1 * 180, TriggerValue::FALL);
 
-	s->addEvent720(2 * 180 - width, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent720(2 * 180, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent720(2 * 180 - width, TriggerValue::RISE);
+	s->addEvent720(2 * 180, TriggerValue::FALL);
 
-	s->addEvent720(3 * 180 - width, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent720(3 * 180, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent720(3 * 180 - width, TriggerValue::RISE);
+	s->addEvent720(3 * 180, TriggerValue::FALL);
 
-	s->addEvent720(4 * 180 - width, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent720(4 * 180, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent720(4 * 180 - width, TriggerValue::RISE);
+	s->addEvent720(4 * 180, TriggerValue::FALL);
 }
 
 static void addPrimaryToothEndingAt(TriggerWaveform *s, float fallAngle) {
 	int vvtWidth = 20;
 
-	s->addEventAngle(fallAngle - vvtWidth, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEventAngle(fallAngle, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEventAngle(fallAngle - vvtWidth, TriggerValue::RISE);
+	s->addEventAngle(fallAngle, TriggerValue::FALL);
 
 }
 
 void initializeNissanVQvvt(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::RiseOnly);
 
 	int offset = 720 - 520;
 
@@ -73,16 +71,15 @@ void makeNissanPattern(TriggerWaveform* s, size_t halfCylinderCount, size_t tota
 	float currentAngle = missing * toothAngle;
 	for (size_t i = 0; i < toothCount; i++) {
 		currentAngle += toothAngle;
-		s->addEventAngle(currentAngle - 5, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-		s->addEventAngle(currentAngle, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+		s->addEventAngle(currentAngle - 5, TriggerValue::RISE);
+		s->addEventAngle(currentAngle, TriggerValue::FALL);
 	}
 }
 
 void initializeNissanVQ35crank(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_THREE_TIMES_CRANK_SENSOR);
+	s->initialize(FOUR_STROKE_THREE_TIMES_CRANK_SENSOR, SyncEdge::RiseOnly);
 
 	s->tdcPosition = 675;
-	s->useRiseEdge = true;
 
 	// 6 cylinder = 36 tooth wheel, missing 2 teeth in 3 spots
 	makeNissanPattern(s, 3, 36, 2);
@@ -92,7 +89,7 @@ void initializeNissanVQ35crank(TriggerWaveform *s) {
 }
 
 void initializeNissanMR18crank(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_SYMMETRICAL_CRANK_SENSOR);
+	s->initialize(FOUR_STROKE_SYMMETRICAL_CRANK_SENSOR, SyncEdge::RiseOnly);
 
 	s->tdcPosition = 80;
 
@@ -102,7 +99,7 @@ void initializeNissanMR18crank(TriggerWaveform *s) {
 }
 
 void initializeNissanQR25crank(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_SYMMETRICAL_CRANK_SENSOR);
+	s->initialize(FOUR_STROKE_SYMMETRICAL_CRANK_SENSOR, SyncEdge::RiseOnly);
 	s->setTriggerSynchronizationGap(0.33);
 	s->setSecondTriggerSynchronizationGap(3);
 
@@ -111,20 +108,20 @@ void initializeNissanQR25crank(TriggerWaveform *s) {
 	float currentAngle = 20;
 	for (int i = 0;i < 16;i++) {
 		currentAngle += 10;
-		s->addEventAngle(currentAngle - 5, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-		s->addEventAngle(currentAngle, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+		s->addEventAngle(currentAngle - 5, TriggerValue::RISE);
+		s->addEventAngle(currentAngle, TriggerValue::FALL);
 	}
 }
 
 static void addvq30tooth(TriggerWaveform *s, float angle) {
-	s->addEvent360(angle - 4, TriggerWheel::T_PRIMARY, TriggerValue::RISE);
-	s->addEvent360(angle, TriggerWheel::T_PRIMARY, TriggerValue::FALL);
+	s->addEvent360(angle - 4, TriggerValue::RISE);
+	s->addEvent360(angle, TriggerValue::FALL);
 }
 
 // yes, this is CAM shaft shape NOT crank shaft shape!
 // we will add crank shape once Pavel makes progress
 void initializeNissanVQ30cam(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::RiseOnly);
 
 	s->tdcPosition = 120;
 
@@ -163,7 +160,7 @@ void initializeNissanVQ30cam(TriggerWaveform *s) {
 }
 
 void initializeNissanMRvvt(TriggerWaveform *s) {
-	s->initialize(FOUR_STROKE_CAM_SENSOR);
+	s->initialize(FOUR_STROKE_CAM_SENSOR, SyncEdge::RiseOnly);
 	s->tdcPosition = 0;
 
 	int x = 73;

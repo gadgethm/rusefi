@@ -1,17 +1,17 @@
 /**
- * @file boards/hellen/hellen121nissan/board_configuration.cpp
+ * @file boards/hellen/hellen154hyundai/board_configuration.cpp
  *
  *
- * @brief Configuration defaults for the hellen121nissan board
+ * @brief Configuration defaults for the hellen154hyundai board
  *
- * See https://rusefi.com/s/hellen121nissan
+ * See https://rusefi.com/s/hellen154hyundai
  *
  * @author andreika <prometheus.pcb@gmail.com>
  * @author Andrey Belomutskiy, (c) 2012-2020
  */
 
 #include "pch.h"
-#include "custom_engine.h"
+#include "defaults.h"
 #include "hellen_meta.h"
 
 static void setInjectorPins() {
@@ -58,29 +58,17 @@ static void setupVbatt() {
 }
 
 static void setupDefaultSensorInputs() {
-	// trigger inputs
-	engineConfiguration->triggerInputPins[0] = H144_IN_CRANK;
-	engineConfiguration->triggerInputPins[1] = Gpio::Unassigned;
-	// Direct hall-only cam input
-	engineConfiguration->camInputs[0] = H144_IN_CAM;
-	engineConfiguration->camInputs[1 * CAMS_PER_BANK] = H144_IN_D_AUX4;
-
 	engineConfiguration->vvtMode[0] = VVT_SECOND_HALF;
-	engineConfiguration->vvtMode[1 * CAMS_PER_BANK] = VVT_SECOND_HALF;
+	engineConfiguration->vvtMode[1] = VVT_SECOND_HALF;
 
     engineConfiguration->vehicleSpeedSensorInputPin = H144_IN_VSS;
 
-	engineConfiguration->tps1_1AdcChannel = H144_IN_TPS;
-	engineConfiguration->tps1_2AdcChannel = H144_IN_AUX1;
+	setTPS1Inputs(H144_IN_TPS, H144_IN_AUX1);
 	engineConfiguration->useETBforIdleControl = true;
 
-	engineConfiguration->throttlePedalUpVoltage = 0.73;
-	engineConfiguration->throttlePedalWOTVoltage = 4.0;
-	engineConfiguration->throttlePedalSecondaryUpVoltage = 0.34;
-	engineConfiguration->throttlePedalSecondaryWOTVoltage = 1.86;
+	setPPSCalibration(0.73, 4.0, 0.34, 1.86);
 
-	engineConfiguration->throttlePedalPositionAdcChannel = EFI_ADC_3;
-	engineConfiguration->throttlePedalPositionSecondAdcChannel = EFI_ADC_14;
+	setPPSInputs(EFI_ADC_3, EFI_ADC_14);
 	engineConfiguration->mafAdcChannel = EFI_ADC_NONE;
 	engineConfiguration->map.sensor.hwChannel = H144_IN_MAP1;
 
@@ -89,9 +77,6 @@ static void setupDefaultSensorInputs() {
 	engineConfiguration->clt.adcChannel = H144_IN_CLT;
 
 	engineConfiguration->iat.adcChannel = H144_IN_IAT;
-
-//	engineConfiguration->auxTempSensor1.adcChannel = H144_IN_O2S2;
-	engineConfiguration->auxTempSensor2.adcChannel = EFI_ADC_NONE;
 }
 
 static bool isFirstInvocation = true;
@@ -105,7 +90,22 @@ void setBoardConfigOverrides() {
 	engineConfiguration->clt.config.bias_resistor = 4700;
 	engineConfiguration->iat.config.bias_resistor = 4700;
 
+	// trigger inputs
+	engineConfiguration->triggerInputPins[1] = Gpio::Unassigned;
+	// Direct hall-only cam input
+	// exhaust input same on both revisions
+	engineConfiguration->camInputs[1] = H144_IN_D_AUX4;
+
 	if (engine->engineState.hellenBoardId == -1) {
+	    engineConfiguration->triggerInputPins[0] = H144_IN_CRANK;
+	    engineConfiguration->camInputs[0] = H144_IN_CAM;
+
+		// control pins are inverted since overall ECU pinout seems to be inverted
+		engineConfiguration->etbIo[0].directionPin1 = H144_OUT_PWM3;
+		engineConfiguration->etbIo[0].directionPin2 = H144_OUT_PWM2;
+		engineConfiguration->etbIo[0].controlPin = H144_OUT_IO12;
+		engineConfiguration->etb_use_two_wires = true;
+
 		// first revision of did not have Hellen Board ID
 		// https://github.com/rusefi/hellen154hyundai/issues/55
 		engineConfiguration->etbIo[1].directionPin1 = Gpio::Unassigned;
@@ -118,7 +118,35 @@ void setBoardConfigOverrides() {
 			efiSetPadMode("ETB FIX1", H144_OUT_PWM5, PAL_MODE_INPUT_ANALOG);
 			efiSetPadMode("ETB FIX2", H144_OUT_IO13, PAL_MODE_INPUT_ANALOG);
 		}
-	}
+	} else if (engine->engineState.hellenBoardId == BOARD_ID_154hyundai_c) {
+		engineConfiguration->triggerInputPins[0] = H144_IN_SENS2;
+		engineConfiguration->camInputs[0] = H144_IN_SENS3;
+
+
+		// todo You would not believe how you invert TLE9201 #4579
+		engineConfiguration->stepperDcInvertedPins = true;
+
+	    //ETB1
+	    // PWM pin
+	    engineConfiguration->etbIo[0].controlPin = H144_OUT_PWM2;
+	    // DIR pin
+		engineConfiguration->etbIo[0].directionPin1 = H144_OUT_PWM3;
+	   	// Disable pin
+	   	engineConfiguration->etbIo[0].disablePin = H144_OUT_IO12;
+	   	// Unused
+	 	engineConfiguration->etbIo[0].directionPin2 = Gpio::Unassigned;
+
+		// wastegate DC motor
+	    //ETB2
+	    // PWM pin
+	    engineConfiguration->etbIo[1].controlPin = H144_OUT_PWM4;
+	    // DIR pin
+		engineConfiguration->etbIo[1].directionPin1 = H144_OUT_PWM5;
+	   	// Disable pin
+	   	engineConfiguration->etbIo[1].disablePin = H144_OUT_IO13;
+	   	// Unused
+	 	engineConfiguration->etbIo[1].directionPin2 = Gpio::Unassigned;
+    }
 }
 
 /**
@@ -154,26 +182,14 @@ void setBoardDefaultConfiguration() {
 	// "required" hardware is done - set some reasonable defaults
 	setupDefaultSensorInputs();
 
-	// control pins are inverted since overall ECU pinout seems to be inverted
-	engineConfiguration->etbIo[0].directionPin1 = H144_OUT_PWM3;
-	engineConfiguration->etbIo[0].directionPin2 = H144_OUT_PWM2;
-	engineConfiguration->etbIo[0].controlPin = H144_OUT_IO12;
-	engineConfiguration->etb_use_two_wires = true;
-
-	// wastegate DC motor
-	engineConfiguration->etbIo[1].directionPin1 = H144_OUT_PWM4;
-	engineConfiguration->etbIo[1].directionPin2 = H144_OUT_PWM5;
-	engineConfiguration->etbIo[1].controlPin = H144_OUT_IO13;
-	engineConfiguration->etb_use_two_wires = true;
 	engineConfiguration->etbFunctions[1] = ETB_Wastegate;
 
 	// Some sensible defaults for other options
 	setCrankOperationMode();
 
-	engineConfiguration->vvtCamSensorUseRise = true;
-	engineConfiguration->useOnlyRisingEdgeForTrigger = true;
 	setAlgorithm(LM_SPEED_DENSITY);
 
+	setEtbPID(8.8944, 70.2307, 0.1855);
 
 	engineConfiguration->injectorCompensationMode = ICM_FixedRailPressure;
 
@@ -188,10 +204,5 @@ void setBoardDefaultConfiguration() {
 	engineConfiguration->crankingInjectionMode = IM_SIMULTANEOUS;
 	engineConfiguration->injectionMode = IM_SIMULTANEOUS;//IM_BATCH;// IM_SEQUENTIAL;
 
-	// very similar to Nissan?
-	engineConfiguration->tpsMin = 100;
-	engineConfiguration->tpsMax = 914;
-
-	engineConfiguration->tps1SecondaryMin = 880;
-	engineConfiguration->tps1SecondaryMax = 68;
+    setTPS1Calibration(98, 926, 891, 69);
 }

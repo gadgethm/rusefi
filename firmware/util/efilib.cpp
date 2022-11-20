@@ -85,7 +85,7 @@ int atoi(const char *string) {
 	// todo: use stdlib '#include <stdlib.h> '
 	int len = strlen(string);
 	if (len == 0) {
-		return -ERROR_CODE;
+		return -ATOI_ERROR_CODE;
 	}
 	if (string[0] == '-') {
 		return -atoi(string + 1);
@@ -95,7 +95,7 @@ int atoi(const char *string) {
 	for (int i = 0; i < len; i++) {
 		char ch = string[i];
 		if (ch < '0' || ch > '9') {
-			return ERROR_CODE;
+			return ATOI_ERROR_CODE;
 		}
 		int c = ch - '0';
 		result = result * 10 + c;
@@ -214,19 +214,19 @@ float atoff(const char *param) {
 	if (dotIndex == -1) {
 		// just an integer
 		int result = atoi(string);
-		if (absI(result) == ERROR_CODE)
+		if (absI(result) == ATOI_ERROR_CODE)
 			return (float) NAN;
 		return (float) result;
 	}
 	// todo: this needs to be fixed
 	string[dotIndex] = 0;
 	int integerPart = atoi(string);
-	if (absI(integerPart) == ERROR_CODE)
+	if (absI(integerPart) == ATOI_ERROR_CODE)
 		return (float) NAN;
 	string += (dotIndex + 1);
 	int decimalLen = strlen(string);
 	int decimal = atoi(string);
-	if (absI(decimal) == ERROR_CODE)
+	if (absI(decimal) == ATOI_ERROR_CODE)
 		return (float) NAN;
 	float divider = 1.0;
 	// todo: reuse 'pow10' function which we have anyway
@@ -297,4 +297,23 @@ float limitRateOfChange(float newValue, float oldValue, float incrLimitPerSec, f
 	if (newValue >= oldValue)
 		return (incrLimitPerSec <= 0.0f) ? newValue : oldValue + minF(newValue - oldValue, incrLimitPerSec * secsPassed);
 	return (decrLimitPerSec <= 0.0f) ? newValue : oldValue - minF(oldValue - newValue, decrLimitPerSec * secsPassed);
+}
+
+bool isPhaseInRange(float test, float current, float next) {
+	bool afterCurrent = test >= current;
+	bool beforeNext = test < next;
+
+	if (next > current) {
+		// we're not near the end of the cycle, comparison is simple
+		// 0            |------------------------|       720
+		//            next                    current
+		return afterCurrent && beforeNext;
+	} else {
+		// we're near the end of the cycle so we have to check the wraparound
+		// 0 -----------|                        |------ 720
+		//            next                    current
+		// Check whether test is after current (ie, between current tooth and end of cycle)
+		// or if test if before next (ie, between start of cycle and next tooth)
+		return afterCurrent || beforeNext;
+	}
 }

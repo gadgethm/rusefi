@@ -1,7 +1,6 @@
 package com.rusefi.maintenance;
 
 import com.devexperts.util.TimeUtil;
-import com.rusefi.SimulatorExecHelper;
 import com.rusefi.ui.StatusConsumer;
 import org.jetbrains.annotations.NotNull;
 
@@ -69,9 +68,14 @@ public class ExecHelper {
             return error.toString();
         }
 
+        File workingDir = new File(workingDirPath);
+        return executeCommand(command, wnd, output, error, workingDir);
+    }
+
+    @NotNull
+    public static String executeCommand(String command, StatusConsumer wnd, StringBuffer output, StringBuffer error, File workingDir) {
         wnd.append("Executing " + command);
         try {
-            File workingDir = new File(workingDirPath);
             Process p = Runtime.getRuntime().exec(command, null, workingDir);
             startStreamThread(p, p.getInputStream(), output, wnd);
             startStreamThread(p, p.getErrorStream(), error, wnd);

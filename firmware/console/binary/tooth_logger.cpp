@@ -12,10 +12,6 @@
 #if EFI_TOOTH_LOGGER
 
 typedef struct __attribute__ ((packed)) {
-    uint16_t timestamp;
-} tooth_logger_s;
-
-typedef struct __attribute__ ((packed)) {
 	// the whole order of all packet bytes is reversed, not just the 'endian-swap' integers
 	uint32_t timestamp;
 	// unfortunately all these fields are required by TS...
@@ -242,7 +238,7 @@ void LogTriggerTooth(trigger_event_e tooth, efitick_t timestamp) {
 	}
 
 	// Don't log at significant engine speed
-	if (!engine->isEngineSnifferEnabled) {
+	if (!getTriggerCentral()->isEngineSnifferEnabled) {
 		return;
 	}
 

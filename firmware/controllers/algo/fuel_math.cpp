@@ -54,7 +54,7 @@ float getCrankingFuel3(
 	/**
 	 * Cranking fuel changes over time
 	 */
-	engine->engineState.cranking.durationCoefficient = interpolate2d(revolutionCounterSinceStart, config->crankingCycleBins,
+	engine->engineState.crankingFuel.durationCoefficient = interpolate2d(revolutionCounterSinceStart, config->crankingCycleBins,
 			config->crankingCycleCoef);
 
 	/**
@@ -81,28 +81,28 @@ float getCrankingFuel3(
 		// If failed flex sensor, default to 50% E
 		auto flex = Sensor::get(SensorType::FuelEthanolPercent).value_or(50);
 
-		engine->engineState.cranking.coolantTemperatureCoefficient =
+		engine->engineState.crankingFuel.coolantTemperatureCoefficient =
 			interpolateClamped(
 				0, e0Mult,
 				85, e85Mult,
 				flex
 			);
 	} else {
-		engine->engineState.cranking.coolantTemperatureCoefficient = e0Mult;
+		engine->engineState.crankingFuel.coolantTemperatureCoefficient = e0Mult;
 	}
 
 	auto tps = Sensor::get(SensorType::DriverThrottleIntent);
-	engine->engineState.cranking.tpsCoefficient =
+	engine->engineState.crankingFuel.tpsCoefficient =
 		tps.Valid
 		? interpolate2d(tps.Value, config->crankingTpsBins, config->crankingTpsCoef)
 		: 1; // in case of failed TPS, don't correct.
 
 	floatms_t crankingFuel = baseCrankingFuel
-			* engine->engineState.cranking.durationCoefficient
-			* engine->engineState.cranking.coolantTemperatureCoefficient
-			* engine->engineState.cranking.tpsCoefficient;
+			* engine->engineState.crankingFuel.durationCoefficient
+			* engine->engineState.crankingFuel.coolantTemperatureCoefficient
+			* engine->engineState.crankingFuel.tpsCoefficient;
 
-	engine->engineState.cranking.fuel = crankingFuel * 1000;
+	engine->engineState.crankingFuel.fuel = crankingFuel * 1000;
 
 	// don't re-warn for zero fuel when we already warned for a more specific problem
 	if (!alreadyWarned && crankingFuel <= 0) {
@@ -129,6 +129,11 @@ float getRunningFuel(float baseFuel) {
 	efiAssert(CUSTOM_ERR_ASSERT, !cisnan(postCrankingFuelCorrection), "NaN postCrankingFuelCorrection", 0);
 
 	float runningFuel = baseFuel * baroCorrection * iatCorrection * cltCorrection * postCrankingFuelCorrection;
+
+#if EFI_LAUNCH_CONTROL
+	runningFuel *= engine->launchController.getFuelCoefficient();
+#endif
+
 	efiAssert(CUSTOM_ERR_ASSERT, !cisnan(runningFuel), "NaN runningFuel", 0);
 
 	engine->engineState.running.fuel = runningFuel * 1000;
@@ -213,6 +218,7 @@ angle_t getInjectionOffset(float rpm, float load) {
 
 	if (cisnan(value)) {
 		// we could be here while resetting configuration for example
+		// huh? what? when do we have RPM while resetting configuration? is that CI edge case? shall we fix CI?
 		warning(CUSTOM_ERR_6569, "phase map not ready");
 		return 0;
 	}

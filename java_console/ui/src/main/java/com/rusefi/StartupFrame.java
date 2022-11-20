@@ -3,8 +3,8 @@ package com.rusefi;
 import com.devexperts.logging.Logging;
 import com.rusefi.autodetect.PortDetector;
 import com.rusefi.autodetect.SerialAutoChecker;
-import com.rusefi.autoupdate.Autoupdate;
-import com.rusefi.autoupdate.AutoupdateUtil;
+import com.rusefi.core.io.BundleUtil;
+import com.rusefi.core.ui.AutoupdateUtil;
 import com.rusefi.io.LinkManager;
 import com.rusefi.io.serial.BaudRateHolder;
 import com.rusefi.maintenance.DriverInstall;
@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.devexperts.logging.Logging.getLogging;
-import static com.rusefi.ui.storage.PersistentConfiguration.getConfig;
+import static com.rusefi.core.preferences.storage.PersistentConfiguration.getConfig;
 import static com.rusefi.ui.util.UiUtils.*;
 import static javax.swing.JOptionPane.YES_NO_OPTION;
 
@@ -57,9 +57,6 @@ public class StartupFrame {
     private final JPanel connectPanel = new JPanel(new FlowLayout());
     // todo: move this line to the connectPanel
     private final JComboBox<String> comboPorts = new JComboBox<>();
-    @NotNull
-    private List<String> currentlyDisplayedPorts = new ArrayList<>();
-    private boolean isFirstTimeApplyingPorts = true;
     private final JPanel leftPanel = new JPanel(new VerticalFlowLayout());
 
     private final JPanel realHardwarePanel = new JPanel(new MigLayout());
@@ -76,7 +73,7 @@ public class StartupFrame {
      * closing the application.
      */
     private boolean isProceeding;
-    private final JLabel noPortsMessage = new JLabel("No ports found!");
+    private final JLabel noPortsMessage = new JLabel("<html>No ports found!<br>Confirm blue LED is blinking</html>");
 
     public StartupFrame() {
 //        AudioPlayback.start();
@@ -93,12 +90,11 @@ public class StartupFrame {
             }
         });
         AutoupdateUtil.setAppIcon(frame);
-        SerialPortScanner.INSTANCE.startTimer();
     }
 
     @NotNull
     public static String appendBundleName(String title) {
-        String bundleName = Autoupdate.readBundleFullNameNotNull();
+        String bundleName = BundleUtil.readBundleFullNameNotNull();
         return title + " " + bundleName;
     }
 
@@ -122,6 +118,7 @@ public class StartupFrame {
         //connectButton.setBackground(new Color(RUSEFI_ORANGE)); // custom orange
         setToolTip(connectButton, "Connect to real hardware");
         connectPanel.add(connectButton);
+        connectPanel.setVisible(false);
 
         frame.getRootPane().setDefaultButton(connectButton);
         connectButton.addKeyListener(new KeyAdapter() {
@@ -149,10 +146,11 @@ public class StartupFrame {
         realHardwarePanel.add(noPortsMessage, "right, wrap");
         installMessage(noPortsMessage, "Check you cables. Check your drivers. Do you want to start simulator maybe?");
 
+        ProgramSelector selector = new ProgramSelector(comboPorts);
+
         if (FileLog.isWindows()) {
             realHardwarePanel.add(new HorizontalLine(), "right, wrap");
 
-            ProgramSelector selector = new ProgramSelector(comboPorts);
             realHardwarePanel.add(selector.getControl(), "right, wrap");
 
             // for F7 builds we just build one file at the moment
@@ -170,11 +168,11 @@ public class StartupFrame {
             //realHardwarePanel.add(new EraseChip().getButton(), "right, wrap");
         }
 
-        SerialPortScanner.INSTANCE.listeners.add(() -> SwingUtilities.invokeLater(this::applyKnownPorts));
-
-        // todo: invoke this NOT on AWT thread?
-        SerialPortScanner.INSTANCE.findAllAvailablePorts(false);
-        applyKnownPorts();
+        SerialPortScanner.INSTANCE.addListener(currentHardware -> SwingUtilities.invokeLater(() -> {
+            selector.apply(currentHardware);
+            applyKnownPorts(currentHardware);
+            frame.pack();
+        }));
 
         final JButton buttonLogViewer = new JButton();
         buttonLogViewer.setText("Start " + LinkManager.LOG_VIEWER);
@@ -193,7 +191,7 @@ public class StartupFrame {
 
         JPanel rightPanel = new JPanel(new VerticalFlowLayout());
 
-        if (Autoupdate.readBundleFullNameNotNull().contains("proteus_f7")) {
+        if (BundleUtil.readBundleFullNameNotNull().contains("proteus_f7")) {
             String text = "WARNING: Proteus F7";
             URLLabel urlLabel = new URLLabel(text, "https://github.com/rusefi/rusefi/wiki/F7-requires-full-erase");
             Color originalColor = urlLabel.getForeground();
@@ -230,21 +228,14 @@ public class StartupFrame {
         }
     }
 
-    private void applyKnownPorts() {
-        List<String> ports = SerialPortScanner.INSTANCE.getKnownPorts();
-        if (!currentlyDisplayedPorts.equals(ports) || isFirstTimeApplyingPorts) {
+    private void applyKnownPorts(SerialPortScanner.AvailableHardware currentHardware) {
+        List<String> ports = currentHardware.getKnownPorts();
             log.info("Rendering available ports: " + ports);
-            isFirstTimeApplyingPorts = false;
             connectPanel.setVisible(!ports.isEmpty());
             noPortsMessage.setVisible(ports.isEmpty());
-//        panel.add(comboSpeeds); // todo: finish speed selector UI component
-//            horizontalLine.setVisible(!ports.isEmpty());
 
             applyPortSelectionToUIcontrol(ports);
-            currentlyDisplayedPorts = ports;
             UiUtils.trueLayout(connectPanel);
-            frame.pack();
-        }
     }
 
     public static void setFrameIcon(Frame frame) {
@@ -266,7 +257,7 @@ public class StartupFrame {
 
     @Nullable
     private static ImageIcon getBundleIcon() {
-        String bundle = Autoupdate.readBundleFullNameNotNull();
+        String bundle = BundleUtil.readBundleFullNameNotNull();
         String logoName;
         // these should be about 213px wide
         if (bundle.contains("proteus")) {

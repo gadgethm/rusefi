@@ -1,4 +1,4 @@
-// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on gen_config.sh integration/rusefi_config.txt Sat Sep 10 05:10:15 UTC 2022
+// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on gen_config.sh integration/rusefi_config.txt Sat Nov 19 14:45:44 UTC 2022
 // by class com.rusefi.output.CHeaderConsumer
 // begin
 #pragma once
@@ -761,7 +761,7 @@ struct engine_configuration_s {
 	bool useTLE8888_cranking_hack : 1 {};
 	/**
 	offset 120 bit 18 */
-	bool unused120b18 : 1 {};
+	bool kickStartCranking : 1 {};
 	/**
 	 * This uses separate ignition timing and VE tables not only for idle conditions, also during the postcranking-to-idle taper transition (See also afterCrankingIACtaperDuration).
 	offset 120 bit 19 */
@@ -1246,7 +1246,7 @@ struct engine_configuration_s {
 	 * Select which cam is used for engine sync. Other cams will be used only for VVT measurement, but not engine sync.
 	 * offset 566
 	 */
-	uint8_t engineSyncCam;
+	engineSyncCam_e engineSyncCam;
 	/**
 	 * Set this so your vehicle speed signal is responsive, but not noisy. Larger value give smoother but slower response.
 	 * offset 567
@@ -1618,9 +1618,18 @@ struct engine_configuration_s {
 	 */
 	Gpio triggerSimulatorPins[TRIGGER_SIMULATOR_PIN_COUNT];
 	/**
+	g/s
+	 * offset 752
+	 */
+	scaled_channel<uint16_t, 1000, 1> fordInjectorSmallPulseSlope;
+	/**
 	 * offset 754
 	 */
 	pin_output_mode_e triggerSimulatorPinModes[TRIGGER_SIMULATOR_PIN_COUNT];
+	/**
+	 * offset 756
+	 */
+	adc_channel_e maf2AdcChannel;
 	/**
 	 * need 4 byte alignment
 	units
@@ -1700,10 +1709,8 @@ struct engine_configuration_s {
 	offset 764 bit 16 */
 	bool isCJ125Enabled : 1 {};
 	/**
-	 * Use rise or fall signal front
-	 * get vvtCamSensorUseRise
 	offset 764 bit 17 */
-	bool vvtCamSensorUseRise : 1 {};
+	bool unused764b17 : 1 {};
 	/**
 	 * Useful for individual intakes
 	offset 764 bit 18 */
@@ -2313,7 +2320,7 @@ struct engine_configuration_s {
 	/**
 	 * offset 1040
 	 */
-	int unused962;
+	float turbochargerFilter;
 	/**
 	 * offset 1044
 	 */
@@ -2625,10 +2632,8 @@ struct engine_configuration_s {
 	offset 1372 bit 12 */
 	bool twoWireBatchInjection : 1 {};
 	/**
-	 * VR sensors are only precise on rising front
-	 * enable trigger_only_front
 	offset 1372 bit 13 */
-	bool useOnlyRisingEdgeForTrigger : 1 {};
+	bool unused1372b13 : 1 {};
 	/**
 	 * This is needed if your coils are individually wired (COP) and you wish to use batch ignition (Wasted Spark).
 	offset 1372 bit 14 */
@@ -2683,7 +2688,7 @@ struct engine_configuration_s {
 	bool invertVvtControlExhaust : 1 {};
 	/**
 	offset 1372 bit 27 */
-	bool unused_1484_bit_27 : 1 {};
+	bool useBiQuadOnAuxSpeedSensors : 1 {};
 	/**
 	offset 1372 bit 28 */
 	bool unused_1484_bit_38 : 1 {};
@@ -3126,8 +3131,9 @@ struct engine_configuration_s {
 	offset 1628 bit 2 */
 	bool can2OpenBLT : 1 {};
 	/**
+	 * Select whether to configure injector flow in volumetric flow (defualt, cc/min) or mass flow (g/s).
 	offset 1628 bit 3 */
-	bool unused1740b2 : 1 {};
+	bool injectorFlowAsMassFlow : 1 {};
 	/**
 	offset 1628 bit 4 */
 	bool unused1127 : 1 {};
@@ -3142,76 +3148,76 @@ struct engine_configuration_s {
 	bool unused1130 : 1 {};
 	/**
 	offset 1628 bit 8 */
-	bool unusedBit_539_8 : 1 {};
+	bool unusedBit_541_8 : 1 {};
 	/**
 	offset 1628 bit 9 */
-	bool unusedBit_539_9 : 1 {};
+	bool unusedBit_541_9 : 1 {};
 	/**
 	offset 1628 bit 10 */
-	bool unusedBit_539_10 : 1 {};
+	bool unusedBit_541_10 : 1 {};
 	/**
 	offset 1628 bit 11 */
-	bool unusedBit_539_11 : 1 {};
+	bool unusedBit_541_11 : 1 {};
 	/**
 	offset 1628 bit 12 */
-	bool unusedBit_539_12 : 1 {};
+	bool unusedBit_541_12 : 1 {};
 	/**
 	offset 1628 bit 13 */
-	bool unusedBit_539_13 : 1 {};
+	bool unusedBit_541_13 : 1 {};
 	/**
 	offset 1628 bit 14 */
-	bool unusedBit_539_14 : 1 {};
+	bool unusedBit_541_14 : 1 {};
 	/**
 	offset 1628 bit 15 */
-	bool unusedBit_539_15 : 1 {};
+	bool unusedBit_541_15 : 1 {};
 	/**
 	offset 1628 bit 16 */
-	bool unusedBit_539_16 : 1 {};
+	bool unusedBit_541_16 : 1 {};
 	/**
 	offset 1628 bit 17 */
-	bool unusedBit_539_17 : 1 {};
+	bool unusedBit_541_17 : 1 {};
 	/**
 	offset 1628 bit 18 */
-	bool unusedBit_539_18 : 1 {};
+	bool unusedBit_541_18 : 1 {};
 	/**
 	offset 1628 bit 19 */
-	bool unusedBit_539_19 : 1 {};
+	bool unusedBit_541_19 : 1 {};
 	/**
 	offset 1628 bit 20 */
-	bool unusedBit_539_20 : 1 {};
+	bool unusedBit_541_20 : 1 {};
 	/**
 	offset 1628 bit 21 */
-	bool unusedBit_539_21 : 1 {};
+	bool unusedBit_541_21 : 1 {};
 	/**
 	offset 1628 bit 22 */
-	bool unusedBit_539_22 : 1 {};
+	bool unusedBit_541_22 : 1 {};
 	/**
 	offset 1628 bit 23 */
-	bool unusedBit_539_23 : 1 {};
+	bool unusedBit_541_23 : 1 {};
 	/**
 	offset 1628 bit 24 */
-	bool unusedBit_539_24 : 1 {};
+	bool unusedBit_541_24 : 1 {};
 	/**
 	offset 1628 bit 25 */
-	bool unusedBit_539_25 : 1 {};
+	bool unusedBit_541_25 : 1 {};
 	/**
 	offset 1628 bit 26 */
-	bool unusedBit_539_26 : 1 {};
+	bool unusedBit_541_26 : 1 {};
 	/**
 	offset 1628 bit 27 */
-	bool unusedBit_539_27 : 1 {};
+	bool unusedBit_541_27 : 1 {};
 	/**
 	offset 1628 bit 28 */
-	bool unusedBit_539_28 : 1 {};
+	bool unusedBit_541_28 : 1 {};
 	/**
 	offset 1628 bit 29 */
-	bool unusedBit_539_29 : 1 {};
+	bool unusedBit_541_29 : 1 {};
 	/**
 	offset 1628 bit 30 */
-	bool unusedBit_539_30 : 1 {};
+	bool unusedBit_541_30 : 1 {};
 	/**
 	offset 1628 bit 31 */
-	bool unusedBit_539_31 : 1 {};
+	bool unusedBit_541_31 : 1 {};
 	/**
 	 * Time between bench test pulses
 	ms
@@ -3319,6 +3325,8 @@ struct engine_configuration_s {
 	 */
 	float egoValueShift;
 	/**
+	 * VVT output
+	 * TODO: rename to vvtOutputs
 	 * offset 1700
 	 */
 	output_pin_e vvtPins[CAM_INPUTS_COUNT];
@@ -3576,6 +3584,8 @@ struct engine_configuration_s {
 	 */
 	uint8_t alignmentFill_at_1959[1];
 	/**
+	 * VVT output PID
+	 * TODO: rename to vvtPid
 	 * offset 1960
 	 */
 	pid_s auxPid[CAMS_PER_BANK];
@@ -3641,51 +3651,72 @@ struct engine_configuration_s {
 	 */
 	Gpio mc33816_cs;
 	/**
+	 * need 4 byte alignment
+	units
 	 * offset 2074
 	 */
-	Gpio sorryUnused[8];
+	uint8_t alignmentFill_at_2074[2];
+	/**
+	 * offset 2076
+	 */
+	float auxFrequencyFilter;
+	/**
+	RPM
+	 * offset 2080
+	 */
+	int16_t vvtControlMinRpm;
+	/**
+	 * offset 2082
+	 */
+	brain_input_pin_e sentInputPins[SENT_INPUT_COUNT];
+	/**
+	 * offset 2084
+	 */
+	int8_t launchFuelAdderPercent;
+	/**
+	 * offset 2085
+	 */
+	int8_t sorryUnused[3];
+	/**
+	 * offset 2088
+	 */
+	int8_t sorryUnusedF[4];
 	/**
 	 * This sets the RPM above which fuel cut is active.
 	rpm
-	 * offset 2090
+	 * offset 2092
 	 */
 	int16_t coastingFuelCutRpmHigh;
 	/**
 	 * This sets the RPM below which fuel cut is deactivated, this prevents jerking or issues transitioning to idle
 	rpm
-	 * offset 2092
+	 * offset 2094
 	 */
 	int16_t coastingFuelCutRpmLow;
 	/**
 	 * Throttle position below which fuel cut is active. With an electronic throttle enabled, this checks against pedal position.
 	%
-	 * offset 2094
+	 * offset 2096
 	 */
 	int16_t coastingFuelCutTps;
 	/**
 	 * Fuel cutoff is disabled when the engine is cold.
 	C
-	 * offset 2096
+	 * offset 2098
 	 */
 	int16_t coastingFuelCutClt;
 	/**
 	 * Increases PID reaction for RPM<target by adding extra percent to PID-error
 	%
-	 * offset 2098
+	 * offset 2100
 	 */
 	int16_t pidExtraForLowRpm;
 	/**
 	 * MAP value above which fuel injection is re-enabled.
 	kPa
-	 * offset 2100
-	 */
-	int16_t coastingFuelCutMap;
-	/**
-	 * need 4 byte alignment
-	units
 	 * offset 2102
 	 */
-	uint8_t alignmentFill_at_2102[2];
+	int16_t coastingFuelCutMap;
 	/**
 	 * offset 2104
 	 */
@@ -3779,11 +3810,9 @@ struct engine_configuration_s {
 	 */
 	pid_s idleTimingPid;
 	/**
-	 * If the RPM closer to target than this value, disable timing correction to prevent oscillation
-	RPM
 	 * offset 2496
 	 */
-	int16_t idleTimingPidDeadZone;
+	int16_t unused2496;
 	/**
 	 * A delay in cycles between fuel-enrich. portions
 	cycles
@@ -3990,30 +4019,47 @@ struct engine_configuration_s {
 	 */
 	scaled_channel<uint8_t, 10, 1> acDelay;
 	/**
+	 * need 4 byte alignment
+	units
 	 * offset 3123
 	 */
-	int8_t unused4080[9];
+	uint8_t alignmentFill_at_3123[1];
+	/**
+	mg
+	 * offset 3124
+	 */
+	scaled_channel<uint16_t, 1000, 1> fordInjectorSmallPulseBreakPoint;
+	/**
+	 * offset 3126
+	 */
+	int8_t unused4080[5];
 	/**
 	lobes/cam
-	 * offset 3132
+	 * offset 3131
 	 */
 	uint8_t hpfpCamLobes;
 	/**
-	 * offset 3133
+	 * offset 3132
 	 */
 	hpfp_cam_e hpfpCam;
 	/**
 	 * Crank angle ATDC of first lobe peak
 	deg
-	 * offset 3134
+	 * offset 3133
 	 */
 	uint8_t hpfpPeakPos;
 	/**
 	 * If the requested activation time is below this angle, don't bother running the pump
 	deg
-	 * offset 3135
+	 * offset 3134
 	 */
 	uint8_t hpfpMinAngle;
+	/**
+	 * need 4 byte alignment
+	units
+	 * offset 3135
+	 */
+	uint8_t alignmentFill_at_3135[1];
 	/**
 	 * Size of the pump chamber in cc. Typical Bosch HDP5 has a 9.0mm diameter, typical BMW N* stroke is 4.4mm.
 	cc
@@ -4284,6 +4330,50 @@ struct cyl_trim_s {
 };
 static_assert(sizeof(cyl_trim_s) == 16);
 
+// start of blend_table_s
+struct blend_table_s {
+	/**
+	 * offset 0
+	 */
+	scaled_channel<int16_t, 10, 1> table[8][8];
+	/**
+	Load
+	 * offset 128
+	 */
+	uint16_t loadBins[8];
+	/**
+	RPM
+	 * offset 144
+	 */
+	uint16_t rpmBins[8];
+	/**
+	 * offset 160
+	 */
+	gppwm_channel_e blendParameter;
+	/**
+	 * need 4 byte alignment
+	units
+	 * offset 161
+	 */
+	uint8_t alignmentFill_at_161[1];
+	/**
+	 * offset 162
+	 */
+	scaled_channel<int16_t, 10, 1> blendBins[8];
+	/**
+	%
+	 * offset 178
+	 */
+	scaled_channel<uint8_t, 2, 1> blendValues[8];
+	/**
+	 * need 4 byte alignment
+	units
+	 * offset 186
+	 */
+	uint8_t alignmentFill_at_186[2];
+};
+static_assert(sizeof(blend_table_s) == 188);
+
 // start of persistent_config_s
 struct persistent_config_s {
 	/**
@@ -4514,7 +4604,7 @@ struct persistent_config_s {
 	%
 	 * offset 5452
 	 */
-	scaled_channel<uint8_t, 1, 1> boostTpsBins[BOOST_LOAD_COUNT];
+	uint8_t boostTpsBins[BOOST_LOAD_COUNT];
 	/**
 	%
 	 * offset 5460
@@ -4563,7 +4653,7 @@ struct persistent_config_s {
 	load
 	 * offset 5648
 	 */
-	scaled_channel<uint8_t, 1, 1> idleVeLoadBins[IDLE_VE_SIZE];
+	uint8_t idleVeLoadBins[IDLE_VE_SIZE];
 	/**
 	%
 	 * offset 5652
@@ -4988,8 +5078,16 @@ struct persistent_config_s {
 	 * offset 21290
 	 */
 	scaled_channel<uint8_t, 1, 100> maxKnockRetardRpmBins[6];
+	/**
+	 * offset 21296
+	 */
+	blend_table_s ignBlends[IGN_BLEND_COUNT];
+	/**
+	 * offset 22048
+	 */
+	blend_table_s veBlends[VE_BLEND_COUNT];
 };
-static_assert(sizeof(persistent_config_s) == 21296);
+static_assert(sizeof(persistent_config_s) == 22800);
 
 // end
-// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on gen_config.sh integration/rusefi_config.txt Sat Sep 10 05:10:15 UTC 2022
+// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on gen_config.sh integration/rusefi_config.txt Sat Nov 19 14:45:44 UTC 2022
