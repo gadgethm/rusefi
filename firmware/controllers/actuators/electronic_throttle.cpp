@@ -360,6 +360,7 @@ expected<percent_t> EtbController::getSetpointEtb() {
 	}
 
 	targetPosition = clampF(minPosition, targetPosition, maxPosition);
+	etbCurrentAdjustedTarget = targetPosition;
 
 #if EFI_TUNER_STUDIO
 	if (m_function == ETB_Throttle1) {
@@ -569,7 +570,6 @@ void EtbController::update() {
 	// Only debug throttle #1
 	if (m_function == ETB_Throttle1) {
 		m_pid.postState(engine->outputChannels.etbStatus);
-		engine->outputChannels.etbStatus.output = directPwmValue;
 	}
 #endif /* EFI_TUNER_STUDIO */
 

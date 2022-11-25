@@ -169,6 +169,11 @@ enable2ndByteCanID = false
 ; see TS_OUTPUT_SIZE in console source code
 	ochBlockSize	= @@TS_TOTAL_OUTPUT_SIZE@@
 
+; 11.2.3 Full Optimized – High Speed
+    scatteredOchGetCommand = @@TS_GET_SCATTERED_GET_COMMAND_char@@
+	scatteredOffsetArray = highSpeedOffsets
+	scatteredGetEnabled = { 0 }
+
 ;
 ; see TunerStudioOutputChannels struct
 ;
@@ -1670,6 +1675,7 @@ menuDialog = main
 		subMenu = idleAdvanceCurve,			"Ignition advance", 0, {useSeparateAdvanceForIdle == 1}
 
 	menu = "&Advanced"
+		subMenu = smLaunchControl,			"Launch Control"
 		subMenu = ignitionCylExtra,			"Cylinder offsets", 0
 
 		subMenu = std_separator
@@ -1806,7 +1812,6 @@ menuDialog = main
 		subMenu = hpfpTargetTable,							"HPFP Target Pressure", {hpfpCamLobes != 0}
 		subMenu = hpfpCompensationTable,					"HPFP Pump Compensation", {hpfpCamLobes != 0}
 		subMenu = std_separator
-		subMenu = smLaunchControl,			"Launch Control"
 		subMenu = fancyHardwareDialog,		"Fancy Hardware"
 		subMenu = std_separator
 
@@ -4070,18 +4075,18 @@ dialog = tcuControls, "Transmission Settings"
 		field = "Speed Threshold",							launchSpeedThreshold,  {launchControlEnabled == 1}
 		field = ""
 		field = "Launch RPM",								launchRpm,  {launchControlEnabled == 1}
+		field = "Ignition Retard Adder",				    launchTimingRpmRange,  {launchControlEnabled == 1 && enableLaunchRetard == 1}
+		field = "Hard Cut RPM Adder",						hardCutRpmRange,  {launchControlEnabled == 1}
 		;field = "Extra Fuel",							launchFuelAdded,  {launchControlEnabled == 1}
 		;field = "Boost Solenoid Duty",						launchBoostDuty,  {launchControlEnabled == 1}
 		field = "TPS Threshold",								launchTpsThreshold,  {launchControlEnabled == 1}
 		field = "Ignition Retard enable",					enableLaunchRetard,  {launchControlEnabled == 1}
 		field = "Ignition Retard",						launchTimingRetard,  {launchControlEnabled == 1 && enableLaunchRetard == 1}
 		field = "Fuel Added %",                     launchFuelAdderPercent,  {launchControlEnabled == 1}
-		field = "Ignition Retard RPM Adder",				launchTimingRpmRange,  {launchControlEnabled == 1 && enableLaunchRetard == 1}
 		field = "Smooth Retard Mode",						launchSmoothRetard,  {launchControlEnabled == 1 && enableLaunchRetard == 1}
 		field = "Hard Cut Mode"
 		field = "Ignition Cut",							launchSparkCutEnable,  {launchControlEnabled == 1}
 		field = "Fuel Cut",								launchFuelCutEnable,  {launchControlEnabled == 1}
-		field = "Hard Cut RPM Adder",						hardCutRpmRange,  {launchControlEnabled == 1}
 
 
 	dialog = smLaunchControl, "", border
