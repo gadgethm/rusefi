@@ -9,7 +9,7 @@ pins:
     type: 12V
   
   - pin: 1B
-    id: EFI_ADC_5
+    id: [A5, EFI_ADC_5]
     class: analog_inputs
     ts_name: 1B (A5) - Battery Sense
     function: ECU power in start & run
@@ -68,8 +68,11 @@ pins:
     function: Sensor +5V
 
   - pin: 1O
-    ts_name: 1O (P19)
-    function: N/A
+    id: E12
+    class: switch_inputs
+    ts_name: 1O (E12) - Brake Input
+    function: Brake Input
+    type: din
 
   - pin: 1Q
     id: [C5, EFI_ADC_15]
