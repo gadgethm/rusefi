@@ -9,16 +9,16 @@ pins:
     type: 12V
   
   - pin: 1B
-    id: [A5, EFI_ADC_5]
+    id: EFI_ADC_5
     class: analog_inputs
-    ts_name: 1B (A5) - Battery Sense
+    ts_name: A5 (1B) - Battery Sense
     function: ECU power in start & run
     type: 12V
 
   - pin: 1C
     id: H13
     class: outputs
-    ts_name: 1C (H13) - ST_SIG
+    ts_name: H13 (1C) - ST_SIG
     function: Fuel Pump Relay
     type: ls
 
@@ -29,7 +29,7 @@ pins:
   - pin: 1E
     id: G4
     class: outputs
-    ts_name: 1E (G4) - Check Engine Light
+    ts_name: G4 (1E) - Check Engine Light
     function: Check Engine Light
     type: ls
 
@@ -40,13 +40,13 @@ pins:
   - pin: 1G
     id: I8
     class: outputs
-    ts_name: 1G (I8) - Ignition 1 & 4
+    ts_name: I8 (1G) - Ignition 1 & 4
     type: ign
  
   - pin: 1H
     id: E5
     class: outputs
-    ts_name: 1H (E5) - Ignition 2 & 3
+    ts_name: E5 (1H) - Ignition 2 & 3
     type: ign
 
   - pin: 1I
@@ -56,7 +56,7 @@ pins:
   - pin: 1J
     id: H15
     class: outputs
-    ts_name: 1J (H15) - AC Relay
+    ts_name: H15 (1J) - AC Relay
     function: A/C Relay
     type: ls
 
@@ -64,40 +64,40 @@ pins:
     function: Radiator Fan Relay
     
   - pin: 1N
-    ts_name: 1N (+5V) - 5v ref NA6
+    ts_name: +5V (1N) - 5V ref NA6
     function: Sensor +5V
 
   - pin: 1O
-    id: E12
+    id: E13
     class: switch_inputs
-    ts_name: 1O (E12) - Brake Input
+    ts_name: E13 (1O) - Brake Input
     function: Brake Input
     type: din
 
   - pin: 1Q
     id: [C5, EFI_ADC_15]
     class: [switch_inputs, analog_inputs]
-    ts_name: 1Q (C5) - AC Switch
+    ts_name: C5 (1Q) - AC Switch
     function: A/C switch input
     type: din
 
   - pin: 1R
     id: D12
     class: outputs
-    ts_name: 1R (D12) - Radiator Fan
+    ts_name: D12 (1R) - Radiator Fan
     function: Radiator Fan Relay
     type: ls    
 
   - pin: 1S
-    ts_name: 1S (P17)
+    ts_name: P17 (1S)
     function: Heater Input
 
   - pin: 1T
-    ts_name: 1T (P16)
+    ts_name: P16 (1T)
     function: EGR Solenoid
 
   - pin: 1U
-    ts_name: 1U (P15)
+    ts_name: P15 (1U)
     function: Lights Input
 
   - pin: 1V
@@ -134,14 +134,14 @@ pins:
   - pin: 2I
     id: F14
     class: outputs
-    ts_name: 2I (F14) - VVT
+    ts_name: F14 (2I) - VVT
     function: VVT Output
     type: ls
     
   - pin: 2J
     id: F12
     class: outputs
-    ts_name: 2J (F12) - Boost Control
+    ts_name: F12 (2J) - Boost Control
     function: Boost Control Solenoid
     
   - pin: 2K     
@@ -150,7 +150,7 @@ pins:
   - pin: 2L
     id: F3
     class: event_inputs
-    ts_name: 2L (F3) - Flex Fuel
+    ts_name: F3 (2L) - Flex Fuel
     function: Flex Fuel Input
   
   - pin: 2M
@@ -171,8 +171,8 @@ pins:
     
   - pin: 2P
     id: F7
-    class: []
-    ts_name: 2P (F7) - Knock Input
+    class: switch_inputs
+    ts_name: F7 (2P) - Knock Input
     function: Knock Input   
 
   - pin: 3A
@@ -196,9 +196,9 @@ pins:
     color: white
 
   - pin: 3E
-    id: [B1, EFI_ADC_9]
+    id: B1
     class: event_inputs
-    ts_name: 3E (B1) - Crank Sensor
+    ts_name: B1 (3E) - Crank Sensor
     function: Crankshaft Sensor
   
   - pin: 3F
@@ -207,32 +207,32 @@ pins:
     color: white
 
   - pin: 3G
-    id: [A6, EFI_ADC_6]
+    id: A6
     class: event_inputs
-    ts_name: 3G (A6) - Cam Sensor
+    ts_name: A6 (3G) - Cam Sensor
     function: Camshaft Sensor
     
   - pin: 3I
     id: I0
     class: outputs
-    ts_name: 3I (I0) - Tachometer
+    ts_name: I0 (3I) - Tachometer
     function: tachometer
     
   - pin: 3J
     id: [C1, EFI_ADC_11]
     class: [switch_inputs, analog_inputs]
-    ts_name: 3J (C1) - Oil Pressure
+    ts_name: C1 (3J) - Oil Pressure
     function: Oil pressure sensor
 
   - pin: 3K
     class: outputs
-    ts_name: 3K (+5V) - TPS 5v 94-95
+    ts_name: +5V (3K) - TPS 5V 94-95
     function: 5V reference
     
   - pin: 3L
-    id: [A4, EFI_ADC_4]
+    id: EFI_ADC_4
     class: analog_inputs
-    ts_name: 3M (A4) - TPS Input
+    ts_name: A4 (3L) - TPS Input
     function: TPS Input
     
   - pin: 3M
@@ -243,81 +243,80 @@ pins:
     function: TPS INPUT
         
   - pin: 3N
-    id: [A0, EFI_ADC_0]
+    id: EFI_ADC_0
     class: analog_inputs
-    ts_name: 3N (A0) - Ext O2 Sensor
+    ts_name: A0 (3N) - Ext O2 Sensor
     function: External Wideband signal
 
   - pin: 3O
-    # Commented out because this pin is not connected
-    # id: [C0, EFI_ADC_10]
-    # class: analog_inputs
-    # ts_name: 3O (C0) - MAF Input
+    id: EFI_ADC_10
+    class: analog_inputs
+    ts_name: C0 (3O) - MAF Input
     function: MAF Input
 
   - pin: 3P
-    id: [C3, EFI_ADC_13]
+    id: EFI_ADC_13
     class: analog_inputs
-    ts_name: 3P (C3) - IAT Sensor
+    ts_name: C3 (3P) - IAT Sensor
     function: IAT sensor
 
   - pin: 3Q
-    id: [C2, EFI_ADC_12]
+    id: EFI_ADC_12
     class: analog_inputs
-    ts_name: 3Q (C2) - CLT
+    ts_name: C2 (3Q) - CLT Sensor
     function: CLT sensor
 
   - pin: 3R
     id: F11
     class: event_inputs
-    ts_name: 3R (F11) - Vehicle Speed Sensor
+    ts_name: F11 (3R) - Vehicle Speed Sensor
     function: VSS IN
         
   - pin: 3S
     id: D9
     class: outputs
-    ts_name: 3S (D9) - A/C Fan 94-95
+    ts_name: D9 (3S) - A/C Fan 94-95
     function: A/C Fan
 
   - pin: 3U
     id: G7
     class: outputs
-    ts_name: 3U (G7) - Injector 1
+    ts_name: G7 (3U) - Injector 1
     function: Injector #1
     type: inj
 
   - pin: 3V
     id: G8
     class: outputs
-    ts_name: 3V (G8) - Injector 2
+    ts_name: G8 (3V) - Injector 2
     function: Injector #2
     type: inj
 
   - pin: 3W
     id: D14
     class: outputs
-    ts_name: 3W (D14) - IAC Solenoid
+    ts_name: D14 (3W) - IAC Solenoid
     function: IAC idle
     type: ls
 
   - pin: 3Y
     id: D11
     class: outputs
-    ts_name: 3Y (D11) - Injector 3
+    ts_name: D11 (3Y) - Injector 3
     function: Injector #3
     type: inj
 
   - pin: 3Z
     id: D10
     class: outputs
-    ts_name: 3Z (D10) - Injector 4
+    ts_name: D10 (3Z) - Injector 4
     function: Injector #4
     type: inj
     
   - pin: int_map
-    id: [A2, EFI_ADC_2]
+    id: EFI_ADC_2
     class: analog_inputs
-    ts_name: Internal MAP (A2)
+    ts_name: A2 (N/A) - Internal MAP
     function: MAP Sensor
     
   - pin: 4A
@@ -341,19 +340,19 @@ pins:
   - pin: 4G
     id: [A7, EFI_ADC_7]
     class: [switch_inputs, analog_inputs]
-    ts_name: 4G (A7) - PPS2 or Temp Sensor
+    ts_name: A7 (4G) - PPS2 or Temp Sensor
     function: PPS 
   
   - pin: 4H
     id: [B0, EFI_ADC_8]
     class: [switch_inputs, analog_inputs]
-    ts_name: 4H (B0) - TPS2
+    ts_name: B0 (4H) - TPS2 Input
     function: TPS
       
   - pin: 4I
     id: [A3, EFI_ADC_3]
     class: [switch_inputs, analog_inputs]
-    ts_name: 4I (A3) - PPS1
+    ts_name: A3 (4I) - PPS Input
     
   - pin: 4J
     function: TPS
@@ -367,17 +366,17 @@ pins:
   - pin: int_etb+
     id: C7
     class: outputs
-    ts_name: P11 (C7) - ETB +
+    ts_name: C7 (P11) - ETB +
     
   - pin: int_etb-
     id: C8
     class: outputs
-    ts_name: P13 (C8) - ETB -
+    ts_name: C8 (P13) - ETB -
     
   - pin: int_etb_EN
     id: C6
     class: outputs
-    ts_name: P12 (C6) - ETB EN 
+    ts_name: C6 (P12) - ETB EN 
 
 
 info:

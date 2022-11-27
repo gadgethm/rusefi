@@ -124,7 +124,7 @@ void setBoardDefaultConfiguration() {
 	engineConfiguration->mainRelayPin = Gpio::I2;	// OUT_LOW3
 	engineConfiguration->tachOutputPin = Gpio::I0;
 	engineConfiguration->malfunctionIndicatorPin = Gpio::G9;
-	engineConfiguration->brakePedalPin = Gpio::E12;
+	engineConfiguration->brakePedalPin = Gpio::E13;
 
 	engineConfiguration->vehicleSpeedSensorInputPin = H144_IN_VSS;
 
